@@ -28,7 +28,7 @@ HalaviTaggingMetadata %>%
 # Location ----------------------------------------------------------------
 HalaviTaggingMetadata %>% 
   group_by(year) %>% 
-  count(capture_location)
+  count(release_location)
 
 
   
