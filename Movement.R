@@ -9,9 +9,11 @@ df_r <- dets %>%
 
 sum <- dets %>%
   filter(date > as.Date('04-27-2023',format ="%m-%d-%Y")) %>% 
-  distinct(transmitter_id, station_name) %>%
+  distinct(transmitter_id, station_name, .keep_all = T) %>%
   group_by(transmitter_id) %>%
-  summarize(Detected_Stations = paste(station_name, collapse = ', ')) %>% 
+  summarize(Detected_Stations = paste(station_name, collapse = ', '),
+            length = first(length_m),
+            class = first(life_stage)) %>% 
   mutate(num_stations = str_count(Detected_Stations, ",")+1) 
 
 
