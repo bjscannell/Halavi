@@ -64,7 +64,7 @@ consec <- dplyr::bind_rows(consec)
 # full summary table -----------------------------------------------------------
 
 
-dets %>% group_by(transmitter_id) %>% 
+res <- dets %>% group_by(transmitter_id) %>% 
   summarise(
     transmitter_id = first(transmitter_id),
     ID = first(animal_id_floy_tag_id_pit_tag_code_etc),
@@ -74,9 +74,25 @@ dets %>% group_by(transmitter_id) %>%
     Deployment_Date = first(tag_activation_date),
     Last_Detection = max(date),
     Total_No_Dets = n(),
-    Tracking_Period = as.numeric(mdy('10-13-2023') - first(tag_activation_date)) + 1,
-    Total_Days_Detected = length(unique(date)),
-    residency = (as.numeric(Total_Days_Detected) / as.numeric(Tracking_Period))*100) %>% 
-  left_join(consec, by = "transmitter_id") %>%  View()
-  
+    Days_Liberty = max(date) - min(date) + 1,
+    Days_Monitored = as.numeric(mdy('10-13-2023') - first(tag_activation_date)) + 1,
+    Days_Present = length(unique(date)),
+    residency_max = as.numeric(Days_Present) / as.numeric(Days_Liberty),
+    residency_min = as.numeric(Days_Present)/ as.numeric(Days_Monitored),
+    res_ratio = as.numeric(Days_Liberty)/ as.numeric(Days_Monitored),
+    res_type = case_when(
+      residency_min >= 0.5 ~ "Resident",
+      residency_min < 0.5 & res_ratio > 0.5 ~ "Intermittent Resident",
+      residency_min < 0.5 & res_ratio <= 0.5 ~ "Transient",
+      TRUE ~ NA_character_)) %>% 
+  left_join(consec, by = "transmitter_id")
+
+
+
+res %>% 
+  ggplot(aes(x=res_ratio, y = residency_min,
+             color = res_type)) +
+  geom_point()
+
+
 

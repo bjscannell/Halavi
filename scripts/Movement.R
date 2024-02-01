@@ -80,6 +80,37 @@ gg <- ggplot() +
 gg
 
 
+# animate plot ------------------------------------------------------------
+
+anim = gg + 
+  transition_time(detection_timestamp_utc) +
+  ease_aes('linear')+
+  ggtitle("Date: {frame_along}")
+
+animate(anim, nframes = 8455, fps = 100)
+
+# ---------------------------------
+
+
+date_hour <- seq(ymd_h('2022-11-28 00'),ymd_h('2023-10-7 00'),by='hour')
+df <- as.data.frame(date_hour)
+df <- df %>% mutate(date_hour = as.character(date_hour))
+fish_str <- fish %>% mutate(date_hour = paste0(year(detection_timestamp_utc), "-",
+                                               month(detection_timestamp_utc), "-", 
+                                               day(detection_timestamp_utc), " ",
+                                               hour(detection_timestamp_utc), ":00:00")) %>% 
+  select(date_hour, latitude, longitude) 
+
+
+
+fish_full <- left_join(df,fish_str, by="date_hour") %>% 
+  mutate(latitude = tidyr::replace_na(latitude, 25.551777),
+         longitude = tidyr::replace_na(longitude, 36.845606),
+         detection_timestamp_utc = ymd_hms(date_hour))
+
+
+
+
 # Length vs. Number of Stations -------------------------------------------
 
 dets %>%
