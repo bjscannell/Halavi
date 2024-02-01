@@ -7,24 +7,21 @@ library(lubridate)
 library(readr)
 library(ggplot2)
 
-dets <- read_csv("data/2deployment.csv", 
-                 col_types = cols(`Date and Time (UTC)` = col_datetime(format = "%Y-%m-%d %H:%M:%S"))) %>% clean_names()
+#dets <- read_csv("data/2deployment.csv", 
+#                 col_types = cols(`Date and Time (UTC)` = col_datetime(format = "%Y-%m-%d %H:%M:%S"))) %>% clean_names()
 
 
-dets <- dets %>% 
-  mutate(transmitter_codespace = "A69-9005") %>% 
-  rename(detection_timestamp_utc = date_and_time_utc,
-         transmitter_id = transmitter,
-         receiver_sn = receiver)
+#dets <- dets %>% 
+ # mutate(transmitter_codespace = "A69-9005") %>% 
+ # rename(detection_timestamp_utc = date_and_time_utc,
+  #       transmitter_id = transmitter,
+   #      receiver_sn = receiver)
 
 
-dets <- glatos::false_detections(dets, tf = 3600) %>% filter(passed_filter == 1) %>% 
-  filter(transmitter_id != "A69-1605-73")
+#dets <- glatos::false_detections(dets, tf = 3600) %>% filter(passed_filter == 1) %>% 
+ # filter(transmitter_id != "A69-1605-73")
 
-dets %>% mutate(date = date(detection_timestamp_utc)) %>% 
-  group_by(date) %>% 
-  summarise(count = n_distinct(transmitter_id)) %>% 
-  ggplot(aes(x=date, y = count)) + ()
+
 
 
 

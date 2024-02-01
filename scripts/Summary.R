@@ -13,9 +13,9 @@ library(ggplot2)
 
 
 dets %>% 
-  group_by(date, life_stage) %>% 
+  group_by(date, sex) %>% 
   summarise(count = n_distinct(transmitter_id)) %>% 
-  ggplot(aes(x=date, y = count, color = life_stage)) + geom_smooth()
+  ggplot(aes(x=date, y = count, color = sex)) + geom_smooth(se = F) + theme_bw()
 
 
 # abacus ------------------------------------------------------------------
@@ -23,7 +23,7 @@ dets %>%
 
 dets %>% 
   distinct(date, transmitter_id, .keep_all = T) %>%
-  ggplot(aes(x = date, y = transmitter_id, color = life_stage)) +
+  ggplot(aes(x = date, y = transmitter_id, color = sex)) +
   geom_point(aes()) + theme_minimal() +
   scale_x_date(date_labels = "%b-%Y") +
   labs(
