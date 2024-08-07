@@ -112,6 +112,7 @@ fish_full <- left_join(df,fish_str, by="date_hour") %>%
 
 
 # Length vs. Number of Stations -------------------------------------------
+## By sex
 
 dets %>%
   filter(date > as.Date('04-27-2023',format ="%m-%d-%Y")) %>% 
@@ -130,5 +131,58 @@ dets %>%
   facet_wrap(~sex) +
   theme_bw()
 
+
+
+write_csv(dets, "dets.csv")
+
+
+dets %>% 
+  group_by(transmitter_id) %>% 
+  mutate(location_change = cumsum(station_name != lag(station_name, def = first(station_name)))) %>% ungroup() %>% 
+  group_by(transmitter_id,location_change) %>% 
+  slice(1) %>% ungroup() %>% filter(transmitter_id == "A69-1605-52") %>%  write_csv("dets.csv")
+  
+# Load required libraries
+library(raster)
+library(gdistance)
+
+# Read in the raster of the river map
+water <- raster("Halavi/Reclass_Feat1.tif")
+
+# Convert to categorical data
+rfac <- asFactor(water < 100)
+
+# Compute the transition matrix
+rfactr <- transition(rfac, "areas", 8)
+
+# Define the points
+x <- c(36.8452, 36.847133)
+y <- c(25.572833, 25.535283)
+
+pts <- data.frame(x, y)
+
+start <- matrix(c(pts[1, 1], pts[1, 2]), ncol = 2)
+end <-  matrix(c(pts[2, 1], pts[2, 2]), ncol = 2)
+
+from_point_sf <- st_sfc(st_point(start), crs = 4326)
+end_point_sf <- st_sfc(st_point(end), crs = 4326)
+
+# Transform the sf data frame to EPSG 32637
+from_point_proj <- st_transform(from_point_sf, crs = 32637)
+end_point_proj <- st_transform(end_point_sf, crs = 32637)
+
+
+from_point_sp <- st_as_sf(from_point_proj)
+end_point_sp <- st_as_sf(end_point_proj)
+
+
+path = shortestPath(rfactr, from_point_sp, end_point_sp, output="SpatialLines")
+
+
+utmcrs <-  CRS("+proj=utm +zone=37 +datum=WGS84 +units=m +no_defs")
+
+plot(water)
+plot(from_point_proj, add = TRUE, pch = 16, col = "red")
+plot(end_point_proj, add = TRUE, pch = 16, col = "red")
 
 

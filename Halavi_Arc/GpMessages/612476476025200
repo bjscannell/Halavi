@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?><messages><msg code="0" type="2">Start Time: Thursday, March 7, 2024 10:54:17 AM</msg><msg code="-2147467259" type="100">Traceback (most recent call last):
+  File "c:\program files\arcgis\pro\Resources\ArcToolbox\scripts\generatepointsfromlines.py", line 254, in &lt;module&gt;
+    create_points_from_lines(in_features, out_fc, sp_info.spatialReference,
+  File "c:\program files\arcgis\pro\Resources\ArcToolbox\scripts\generatepointsfromlines.py", line 50, in create_points_from_lines
+    arcpy.management.AddField(output_fc, fid_name, 'LONG')
+  File "C:\Program Files\ArcGIS\Pro\Resources\ArcPy\arcpy\management.py", line 5745, in AddField
+    raise e
+  File "C:\Program Files\ArcGIS\Pro\Resources\ArcPy\arcpy\management.py", line 5742, in AddField
+    retval = convertArcObjectToPythonObject(gp.AddField_management(*gp_fixargs((in_table, field_name, field_type, field_precision, field_scale, field_length, field_alias, field_is_nullable, field_is_required, field_domain), True)))
+  File "C:\Program Files\ArcGIS\Pro\Resources\ArcPy\arcpy\geoprocessing\_base.py", line 512, in &lt;lambda&gt;
+    return lambda *args: val(*gp_fixargs(args, True))
+arcgisscripting.ExecuteError: ERROR 000496: table is being edited
+Failed to execute (AddField).
+
+</msg><msg code="0" type="0">Failed script Generate Points Along Lines...</msg><msg code="-2147467259" type="100">Failed to execute (GeneratePointsAlongLines).</msg><msg code="0" type="3">Failed at Thursday, March 7, 2024 10:54:17 AM (Elapsed Time: 0.38 seconds)</msg></messages>

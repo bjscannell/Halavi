@@ -23,6 +23,7 @@ dets %>%
 
 dets %>% 
   distinct(date, transmitter_id, .keep_all = T) %>%
+  filter(date > as.Date('04-27-2023',format ="%m-%d-%Y")) %>% 
   ggplot(aes(x = date, y = transmitter_id, color = sex)) +
   geom_point(aes()) + theme_minimal() +
   scale_x_date(date_labels = "%b-%Y") +
@@ -75,7 +76,7 @@ res <- dets %>% group_by(transmitter_id) %>%
     Last_Detection = max(date),
     Total_No_Dets = n(),
     Days_Liberty = max(date) - min(date) + 1,
-    Days_Monitored = as.numeric(mdy('10-13-2023') - first(tag_activation_date)) + 1,
+    Days_Monitored = as.numeric(mdy('02-15-2024') - first(tag_activation_date)) + 1, # change to pull from sheet
     Days_Present = length(unique(date)),
     residency_max = as.numeric(Days_Present) / as.numeric(Days_Liberty),
     residency_min = as.numeric(Days_Present)/ as.numeric(Days_Monitored),
@@ -84,15 +85,42 @@ res <- dets %>% group_by(transmitter_id) %>%
       residency_min >= 0.5 ~ "Resident",
       residency_min < 0.5 & res_ratio > 0.5 ~ "Intermittent Resident",
       residency_min < 0.5 & res_ratio <= 0.5 ~ "Transient",
-      TRUE ~ NA_character_)) %>% 
+      TRUE ~ NA_character_),
+    n_stations = n_distinct(station_name)) %>% 
   left_join(consec, by = "transmitter_id")
 
 
 
 res %>% 
   ggplot(aes(x=res_ratio, y = residency_min,
-             color = res_type)) +
+             color = res_type, size = DW)) +
   geom_point()
 
 
 
+res %>% 
+  ggplot(aes(x=res_ratio, y = residency_min,
+             color = res_type, shape = Class)) +
+  geom_point()
+
+
+dets %>% 
+  distinct(date, transmitter_id, .keep_all = T) %>%
+  ggplot(aes(x = date, y = transmitter_id, color = sex)) +
+  geom_point(aes()) + theme_minimal() +
+  scale_x_date(date_labels = "%b-%Y") 
+
+
+# number of stations by size ----------------------------------------------
+
+
+dets %>% group_by(transmitter_id) %>% 
+  mutate(n_stations = n_distinct(station_name)) %>% 
+  distinct(transmitter_id, .keep_all = T) %>% 
+  ggplot(aes(x=n_stations, y=length2_m)) +
+  geom_point() +
+  geom_label(aes(label =length_m)) + 
+  geom_smooth(method = "lm", se = T)
+
+res %>% 
+  filter(Deployment_Date < as.Date('01-27-2023',format ="%m-%d-%Y")) %>% View()
