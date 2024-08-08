@@ -22,24 +22,74 @@ sum <- dets %>%
 # one animated gf ---------------------------------------------------------
 
 library(sf)
+library(ggan)
 
-fish <- dets %>% filter(transmitter_id == "A69-1605-60")
+fish <- dets %>% filter(transmitter_id == "A69-1605-60") %>% 
+  mutate(run = cumsum(receiver_sn != lag(receiver_sn, default = first(receiver_sn)))) %>%
+  group_by(run) %>%
+  slice(1) %>%
+  ungroup() %>% 
+  filter(date > as.Date('04-27-2023',format ="%m-%d-%Y"))
 
 data_sf <- st_as_sf(fish, coords = c("longitude", "latitude"), crs = 4326)
-data_utm <- st_transform(your_data_sf, crs = 32637)
+data_utm <- st_transform(data_sf, crs = 32637)
 
 
-shape.data <- sf::st_read("SpatialData/AlWajhIslands/AlWajhIslands.shp")
+shape.data <- sf::st_read("SpatialData/AlWajhIslands/AlWajhIslands.shp") %>% st_transform(32637)
+
+path <- fish %>% dplyr::select(longitude, latitude)
+path <- SpatialPoints(path, proj4string = CRS("+proj=longlat +datum=WGS84 +no_defs"))
+
+path <-  st_as_sf(path)  %>% st_transform(32637)
+
+
+ggplot() + 
+  ggspatial::annotation_spatial(shape.data, fill = "cornsilk3", size = 0) +
+  geom_point(data = path, aes(x=unlist(map(geometry,1)), y=unlist(map(geometry,2)))) +
+  geom_path(data = path, aes(x=unlist(map(geometry,1)), y=unlist(map(geometry,2))))  +
+  theme_void() +
+  xlim(st_bbox(data_utm)[1],
+       st_bbox(data_utm)[3]) +
+  ylim(c(st_bbox(data_utm)[2],
+         st_bbox(data_utm)[4]))
+
+plot_path <- path %>% summarise(do_union = FALSE) %>% st_cast('LINESTRING')
+
+track_pts <- st_sample(plot_path, size = 10000, type = "regular")
+
+vis_graph <- prt_visgraph(shape.data, buffer = 100)
+
+track_pts_fix <- prt_reroute(track_pts, shape.data, vis_graph, blend = TRUE)
+
+track_pts_fix <- prt_update_points(track_pts_fix, track_pts)
+
+pathroutrplot <- ggplot() + 
+  ggspatial::annotation_spatial(shape.data, fill = "cornsilk3", size = 0) +
+  geom_point(data = track_pts_fix, aes(x=unlist(map(geometry,1)), y=unlist(map(geometry,2)))) +
+  geom_path(data = track_pts_fix, aes(x=unlist(map(geometry,1)), y=unlist(map(geometry,2))))  +
+  theme_void() +
+  xlim(st_bbox(data_utm)[1],
+       st_bbox(data_utm)[3]) +
+  ylim(c(st_bbox(data_utm)[2],
+         st_bbox(data_utm)[4]))
+
+pathroutrplot.animation <-
+  pathroutrplot +
+  transition_reveal(fid) +
+  shadow_mark(past = TRUE, future = FALSE)
+
+gganimate::animate(pathroutrplot.animation, nframes=100, detail=2)
+
 
 
 gg <- ggplot() +
   geom_sf(data = shape.data) +
-  geom_sf(data = data_utm, size = 2) +  # Plot your data points
+  geom_sf(data = data_utm, size = 2) +  
   labs(title = "Quman Detections") +
-  xlim(st_bbox(your_data_utm)[1],
-       st_bbox(your_data_utm)[3]) +
-  ylim(c(st_bbox(your_data_utm)[2],
-         st_bbox(your_data_utm)[4]))
+  xlim(st_bbox(data_utm)[1],
+       st_bbox(data_utm)[3]) +
+  ylim(c(st_bbox(data_utm)[2],
+         st_bbox(data_utm)[4]))
 
 anim = gg + 
   transition_time(detection_timestamp_utc) +

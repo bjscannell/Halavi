@@ -1,5 +1,6 @@
 library(ggplot2)
 library(sf)
+library(cowplot)
 
 # Constraining all the data to the first 17 tags --------------------------
 
@@ -20,7 +21,7 @@ n_med <- function(x){
                     label = paste0("", round(median(x),digits =3))))
 }
 
-HalaviTaggingMetadata %>% 
+length_plot <- HalaviTaggingMetadata %>% 
   filter(utc_release_date_time < as.Date('01-27-2023',format ="%m-%d-%Y")) %>% 
   ggplot(aes(x=life_stage, y = length_m)) +
   geom_boxplot(outlier.shape = NA) +
@@ -32,16 +33,27 @@ HalaviTaggingMetadata %>%
                    breaks = seq(25,75,10),
                    limits = c(25,75)) +
   stat_summary(geom = "text",fun.data = n_fun, vjust = 5) +
-  stat_summary(geom = "text",fun.data = n_med) +
+  stat_summary(geom = "text",fun.data = n_med, size = 5) +
   theme_classic() +
-  coord_cartesian(clip = "off") 
+  coord_cartesian(clip = "off") +
+  theme(
+    panel.background = element_rect(fill = "white", color = "white"),
+    plot.background = element_rect(fill = "white"),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.y = element_blank(),
+    axis.text = element_text(size = 15),
+    axis.title = element_text(size = 25),
+    text = element_text(size = 10)
+  )
   
+ggsave("plots/length_distr.png",length_plot, dpi = 360, width = 10, height = 10, units = "in")
+
   
 
 
 # Abacus plot -------------------------------------------------------------
 
-dets_og %>% 
+abacus <- dets_og %>% 
   group_by(transmitter_id) %>% distinct(date, .keep_all = T) %>% 
   ggplot() +
   geom_point(aes(x = date, y = reorder(transmitter_id, tag_activation_date, decreasing = T)), shape = 20) +
@@ -53,14 +65,23 @@ dets_og %>%
   scale_x_date(date_labels = "%b-%Y") +
   labs(
     x = "Date",
-    y = "Halavi Guitarfish ID",
-    title = "Presence of Halavi Guitarfish in Al Wajh",
-    subtitle = "Detections for 17 tagged individuals by date from acoustic receivers at Quman Island") +
+    y = "Halavi Guitarfish") +
   theme(plot.caption = element_text(hjust = 0, face= "italic"), 
         plot.title.position = "plot", 
-        plot.caption.position =  "plot",
-        plot.title = element_text(face = "bold", size = 16)) 
+        plot.caption.position =  "plot",  
+        axis.text.y = element_blank(),
+        panel.background = element_rect(fill = "white", color = "white"),
+        plot.background = element_rect(fill = "white"),
+        panel.grid.minor = element_blank(),
+        panel.grid.major.y = element_blank(),
+        axis.text = element_text(size = 15),
+        axis.title = element_text(size = 20),
+        axis.title.y = element_text(vjust=-5),
+        axis.title.x = element_text(vjust=0),
+        text = element_text(size = 10)
+        )
 
+ggsave("plots/abacus.png",abacus, dpi = 360, width = 12, height = 6, units = "in")
 
 
 # Calculating individual metrics ---------------------------------------------
@@ -119,10 +140,11 @@ scatter <- res %>%
              color = res_type)) +
   geom_point(size = 3) +
   scale_color_manual(values=c("#8b0700", "#f3ac00", "#5b8fab")) +
-  annotate("text", x = .7, y = .35, label = "Inter-Res", size=4, color = "#8b0700", fontface = "bold") + 
-  annotate("text", x = .75, y = .75, 
+  annotate("text", x = .75, y = .35, 
+           label = "Inter-Res", size=4, color = "#8b0700", fontface = "bold") + 
+  annotate("text", x = .75, y = .70, 
                 label = "Resident", size=4, color = "#f3ac00", fontface = "bold") + 
-  annotate("text", x = .15, y = .15, 
+  annotate("text", x = .08, y = .08, 
                 label = "Transient", size=4, color = "#5b8fab", fontface = "bold") + 
   xlab(bquote(RI[min]/RI[max]))+ 
   ylab(bquote(RI[min])) +
@@ -143,11 +165,13 @@ ggplot(aes(x="", y=n, fill=res_type)) +
   theme_void() +
   theme(legend.position = "none")
 
-ggdraw() +
+residency <- ggdraw() +
   draw_plot(scatter) +
-  draw_plot(pie,x = 0.07, y = .58, width = .3, height = .4)
+  draw_plot(pie,x = 0.11, y = .6, width = .3, height = .4)
 
-# Hotspot Plot ----------------------------coord_polar()# Hotspot Plot ------------------------------------------------------------
+ggsave("plots/residency.png",residency, dpi = 360, width = 6, height = 6, units = "in")
+
+# Hotspot Plot ---------------------------------------------------------------------
 
 station_counts <- dets_og %>% 
   filter(utc_release_date_time < as.Date('04-27-2023',format ="%m-%d-%Y")) %>% 
@@ -234,9 +258,121 @@ dispersion_test
 data_clean$predicted_counts <- predict(poisson_model, type = "response")
 
 
-ggplot(data_clean, aes(x = length_m, y = n_stations)) +
-  geom_point() +
-  geom_line(aes(y = predicted_counts), color = "blue") +
-  labs(title = "Poisson Regression",
-       x = "Length (m)",
-       y = "station count")
+station_length <- ggplot(data_clean, aes(x = length_m, y = n_stations)) +
+  geom_point(color = "#486e4a", size = 3) +
+  geom_line(aes(y = predicted_counts),  color = "#736a66", linewidth = 1) +
+  annotate("text", x = 41, y = 15.3, 
+           label = "p =1.21e-05", size=4, color = "black", fontface = "bold") + 
+  scale_x_continuous(name = "Length (cm)",
+                     breaks = seq(40,70,10),
+                     limits = c(40,70))  +
+  scale_y_continuous(name = "Number of Stations Visted",
+                     breaks = seq(0,15,5),
+                     limits = c(0,15.3)) +
+  theme_bw() +
+  theme(
+    panel.background = element_rect(fill = "white", color = "white"),
+    plot.background = element_rect(fill = "white"),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.y = element_blank(),
+    axis.text = element_text(size = 15),
+    axis.title = element_text(size = 20),
+    text = element_text(size = 10)
+  )
+
+
+ggsave("plots/station_length.png",station_length, dpi = 360, width = 8, height = 6, units = "in")
+
+
+# Animation ---------------------------------------------------------------
+
+
+fish <- dets %>% filter(transmitter_id == "A69-1605-60") %>% 
+  mutate(run = cumsum(receiver_sn != lag(receiver_sn, default = first(receiver_sn)))) %>%
+  group_by(run) %>%
+  slice(1) %>%
+  ungroup() %>% 
+  filter(date > as.Date('04-27-2023',format ="%m-%d-%Y"))
+
+data_sf <- st_as_sf(fish, coords = c("longitude", "latitude"), crs = 4326)
+data_utm <- st_transform(data_sf, crs = 32637)
+
+
+coast <- sf::st_read("SpatialData/AlWajhIslands/AlWajhIslands.shp") %>% st_transform(32637)
+
+l <- data_utm %>% 
+  dplyr::filter(!sf::st_is_empty(.)) %>% 
+  dplyr::summarise(do_union = FALSE) %>% 
+  sf::st_cast('LINESTRING')
+
+ggplot() +
+  ggspatial::annotation_spatial(coast, fill = "cornsilk3", size = 0) +
+  ggspatial::layer_spatial(l, color = "darkgrey", size = 0.5) +
+  ggspatial::layer_spatial(data_utm, color = "deepskyblue3", size = 0.5) +
+  theme_void() +
+  xlim(st_bbox(data_utm)[1],
+       st_bbox(data_utm)[3]) +
+  ylim(c(st_bbox(data_utm)[2],
+         st_bbox(data_utm)[4]))
+
+land_region <- sf::st_buffer(data_utm, dist = 10) %>% 
+  sf::st_union() %>% 
+  sf::st_convex_hull() %>% 
+  sf::st_intersection(coast) %>% 
+  st_collection_extract('POLYGON') %>% 
+  st_sf()
+
+ggplot() +
+  ggspatial::annotation_spatial(land_region, fill = "cornsilk3", size = 0) +
+  ggspatial::layer_spatial(l, color = "darkgrey", size = 0.5) +
+  ggspatial::layer_spatial(data_utm, color = "deepskyblue3", size = 0.5) +
+  theme_void()
+
+
+vis_graph <- prt_visgraph(land_region)
+
+
+vis_graph_sf <- sfnetworks::activate(vis_graph,"edges") %>% sf::st_as_sf()
+
+ggplot() +
+  ggspatial::annotation_spatial(land_region, fill = "cornsilk3", size = 0) +
+  ggspatial::layer_spatial(vis_graph_sf, size = 0.5) +
+  theme_void()
+
+plot_path <- path %>% summarise(do_union = FALSE) %>% st_cast('LINESTRING')
+
+track_pts <- st_sample(plot_path, size = 10000, type = "regular")
+
+track_pts_fix <- prt_reroute(track_pts, coast, vis_graph, blend = TRUE)
+
+track_pts_fix <- prt_update_points(track_pts_fix, track_pts)
+
+pathroutrplot <- ggplot() + 
+  ggspatial::annotation_spatial(coast, fill = "cornsilk3", size = 0) +
+  geom_point(data = track_pts_fix, aes(x=unlist(map(geometry,1)), y=unlist(map(geometry,2)))) +
+  geom_path(data = track_pts_fix, aes(x=unlist(map(geometry,1)), y=unlist(map(geometry,2))))  +
+  geom_sf(data=stations) +
+  theme_void() +
+  xlim(st_bbox(data_utm)[1],
+       st_bbox(data_utm)[3]) +
+  ylim(c(st_bbox(data_utm)[2],
+         st_bbox(data_utm)[4]))
+
+pathroutrplot.animation <-
+  pathroutrplot +
+  transition_reveal(fid) +
+  shadow_mark(past = TRUE, future = FALSE)
+
+gganimate::animate(pathroutrplot.animation, nframes=100, detail=2)
+
+p <- ggplot() +
+  ggspatial::annotation_spatial(coast, fill = "cornsilk3", size = 0) +
+  geom_point(data = track_pts_fix, aes(x=unlist(map(geometry,1)), y=unlist(map(geometry,2)))) +
+  geom_path(data = track_pts_fix, aes(x=unlist(map(geometry,1)), y=unlist(map(geometry,2))))  +  theme_void() +
+  xlim(st_bbox(data_utm)[1],
+       st_bbox(data_utm)[3]) +
+  ylim(c(st_bbox(data_utm)[2],
+         st_bbox(data_utm)[4]))
+
+p + transition_time(fid) +
+  labs(title = "Year: {frame_time}")
