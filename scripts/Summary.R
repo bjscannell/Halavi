@@ -71,6 +71,7 @@ res <- dets %>% group_by(transmitter_id) %>%
     ID = first(animal_id_floy_tag_id_pit_tag_code_etc),
     Sex = first(sex),
     DW = first(length2_m),
+    TL = first(length_m),
     Class = first(life_stage),
     Deployment_Date = first(tag_activation_date),
     Last_Detection = max(date),
