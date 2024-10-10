@@ -312,7 +312,7 @@ sum <- dets %>%
 library(sf)
 library(gganimate)
 library(purrr)
-library(pathoutr)
+library(pathroutr)
 
 fish <- dets_og %>% filter(transmitter_id == "A69-1605-60") %>% 
   mutate(run = cumsum(receiver_sn != lag(receiver_sn, default = first(receiver_sn)))) %>%
