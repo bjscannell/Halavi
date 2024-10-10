@@ -22,20 +22,23 @@ sum <- dets %>%
 # one animated gf ---------------------------------------------------------
 
 library(sf)
-library(ggan)
+library(gganimate)
+library(purrr)
+library(pathoutr)
 
 fish <- dets %>% filter(transmitter_id == "A69-1605-60") %>% 
   mutate(run = cumsum(receiver_sn != lag(receiver_sn, default = first(receiver_sn)))) %>%
   group_by(run) %>%
   slice(1) %>%
   ungroup() %>% 
-  filter(date > as.Date('04-27-2023',format ="%m-%d-%Y"))
+  filter(date > as.Date('04-27-2023',format ="%m-%d-%Y")) %>% 
+  slice(1:50)
 
 data_sf <- st_as_sf(fish, coords = c("longitude", "latitude"), crs = 4326)
 data_utm <- st_transform(data_sf, crs = 32637)
 
-
-shape.data <- sf::st_read("SpatialData/AlWajhIslands/AlWajhIslands.shp") %>% st_transform(32637)
+shape.data <- sf::st_read("SpatialData/AlWajhIslands/AlWajhIslands.shp") %>% 
+  filter(IslandName == "Quman") %>% st_transform(32637)
 
 path <- fish %>% dplyr::select(longitude, latitude)
 path <- SpatialPoints(path, proj4string = CRS("+proj=longlat +datum=WGS84 +no_defs"))
@@ -47,6 +50,7 @@ ggplot() +
   ggspatial::annotation_spatial(shape.data, fill = "cornsilk3", size = 0) +
   geom_point(data = path, aes(x=unlist(map(geometry,1)), y=unlist(map(geometry,2)))) +
   geom_path(data = path, aes(x=unlist(map(geometry,1)), y=unlist(map(geometry,2))))  +
+  geom_sf(data = distinct(data_sf,receiver_sn,.keep_all = T), color = "blue", size = 2, alpha = 0.7) +
   theme_void() +
   xlim(st_bbox(data_utm)[1],
        st_bbox(data_utm)[3]) +
@@ -103,7 +107,7 @@ animate(anim, nframes = 365, fps = 10)
 # everyones locations ---------------------------------------------------------------
 
 # Load your shapefile
-shape.data <- sf::st_read("SpatialData/AlWajhIslands/AlWajhIslands.shp")
+shape.data <- sf::st_read("SpatialData/AlWajhIslands/AlWajhIslands.shp") %>% filter(IslandName == "Quman")
 
 # Replace "dets" with your data frame containing latitude, longitude, and transmitter_id
 data_sf <- st_as_sf(df_r, coords = c("longitude", "latitude"), crs = 4326)
@@ -121,10 +125,10 @@ gg <- ggplot() +
   geom_sf(data = data_utm, aes(color = sex), size = 1) +  # Plot data points with color by transmitter_id
   geom_sf(data = stations, shape = 1, alpha = .5) +
   labs(title = "Quman Detections") +
-  xlim(st_bbox(data_utm)[1],
-       st_bbox(data_utm)[3]) +
-  ylim(c(st_bbox(data_utm)[2],
-         st_bbox(data_utm)[4])) +
+  xlim(st_bbox(shape.data)[1],
+       st_bbox(shape.data)[3]) +
+  ylim(c(st_bbox(shape.data)[2],
+         st_bbox(shape.data)[4])) +
   facet_wrap(~ transmitter_id, nrow = 5)  
 
 gg
