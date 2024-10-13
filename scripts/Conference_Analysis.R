@@ -125,8 +125,8 @@ res <- dets_og %>% group_by(transmitter_id) %>%
     residency_min = as.numeric(Days_Present)/ as.numeric(Days_Monitored),
     res_ratio = as.numeric(Days_Liberty)/ as.numeric(Days_Monitored),
     res_type = case_when(
-      residency_min >= 0.5 & res_ratio > 0.50 ~ "Resident",
-      residency_min < 0.6 & res_ratio > 0.40 ~ "Intermittent Resident",
+      residency_min >= 0.65 & res_ratio > 0.70 ~ "Resident",
+      residency_min < 0.65 & res_ratio > 0.40 ~ "Intermittent Resident",
       residency_min < 0.5 & res_ratio <= 0.5 ~ "Transient",
       TRUE ~ NA_character_),
     n_stations = n_distinct(station_name)) %>% 
@@ -363,5 +363,7 @@ pathroutrplot.animation <-
   transition_reveal(fid) +
   shadow_mark(past = TRUE, future = FALSE)
 
-gganimate::animate(pathroutrplot.animation, nframes=200, detail=2)
+
+# upping the frame rate reduces cross over
+gganimate::animate(pathroutrplot.animation, nframes=300, detail=2)
 
