@@ -197,6 +197,7 @@ ggplot() +
   geom_sf(data = shape.data) +  # Plot your shapefile
   geom_sf(data = data_utm, aes(size = n)) +  # Plot data points with color by transmitter_id
   geom_sf(data = stations, shape = 1, alpha = .5) +
+  geom_sf_text(data = stations, aes(label = station_name), vjust = -1, size = 3) +  # Add station labels
   labs(title = "Quman Detections") +
   xlim(st_bbox(data_utm)[1],
        st_bbox(data_utm)[3]) +
