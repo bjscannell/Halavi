@@ -3,10 +3,13 @@ library(readr)
 library(dplyr)
 library(janitor)
 library(stringr)
+library(vroom)
 library(lubridate)
 
 
 # detection dataset setup -------------------------------------------------
+
+
 
 
 dets_full <- read_csv("data/full_array_detections0224.csv", 
