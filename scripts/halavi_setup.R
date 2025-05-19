@@ -7,42 +7,42 @@ library(vroom)
 
 
 # Check we have all the files ---------------------------------------------
-HalaviTaggingMetadata <- read_csv("data/HalaviTaggingMetadata.csv", 
+HalaviTaggingMetadata <- read_csv("data/tags/HalaviTaggingMetadata.csv", 
                                   col_types = cols(UTC_RELEASE_DATE_TIME = col_datetime(format = "%m/%d/%y %H:%M"),
                                                    TAG_ACTIVATION_DATE = col_date(format = "%d-%b-%y"))) %>%  clean_names() %>% 
   mutate(year = year(utc_release_date_time),
          end_date = tag_activation_date+est_tag_life)
 
 
-HalaviArray <- read_csv("/Users/brittneyscannell/Desktop/HalaviArray.csv", 
+HalaviArray <- read_csv("data/stations/HalaviArray.csv", 
                         col_types = cols(`DEPLOY_DATE_TIME (yyyy-mm-ddThh:mm:ss)` = col_datetime(format = "%Y-%m-%d %H:%M:%S"), 
                                          `RECOVER_DATE_TIME (yyyy-mm-ddThh:mm:ss)` = col_datetime(format = "%Y-%m-%d %H:%M:%S")),
                         n_max=103) 
 
 
-files <- list.files("/Users/brittneyscannell/Desktop/halavi_files")
+files <- list.files("data/detections/halavi_files")
 
-
+# Making sure we have all the files
 names <- unique(c(str_extract(files[which(str_count(files, " ") == 3)],  "^[^.]*"),
                   str_extract(files[which(str_count(files, " ") == 4)],"^([^ ]* +){3}[^ ]*")))
 
 
 test <- data.frame(names, x = seq(1, length(names)))
 
-HalaviArray <- HalaviArray %>% 
-  filter(!is.na(FILENAME)) %>% 
+HalaviArray <- HalaviArray %>%
+  filter(!is.na(FILENAME)) %>%
   mutate(names = if_else(str_count(FILENAME, " ") == 3,str_extract(FILENAME, "^[^.]*"),
-                         str_extract(FILENAME, "^([^ ]* +){3}[^ ]*"))) %>% 
+                         str_extract(FILENAME, "^([^ ]* +){3}[^ ]*"))) %>%
   clean_names()
 
-HalaviArray %>% left_join(test, by = "names") %>% View()
+# HalaviArray %>% left_join(test, by = "names") %>% View()
 
 
 
 # Join files with station and clip to dates -------------------------------
 
 
-files <- list.files("/Users/brittneyscannell/Desktop/halavi_files", full.names = T)
+files <- list.files("data/detections/halavi_files", full.names = T)
 
 raw <- vroom(files, skip = 1, id = "source") %>% clean_names()
 
@@ -68,7 +68,7 @@ dets <- dets_raw %>% left_join(HalaviArray, by = c("id" = "names")) %>%
 
 dets_g <- dets %>% 
   mutate(transmitter_codespace = str_extract(tag_id, "^[^-]*-[^-]*"),
-         date = date(detection_timestamp)) %>% 
+         day = date(detection_timestamp)) %>% 
   rename(detection_timestamp_utc = detection_timestamp,
          transmitter_id = tag_id,
          receiver_sn = receiver)
@@ -83,17 +83,22 @@ dets <- dets %>% left_join(HalaviTaggingMetadata, by = "transmitter_id")
 
 # remove the first line
 dets <- dets %>% 
-  filter(!str_detect(station_no, "GH"))
+  filter(!str_detect(station_no, "GH")) %>% 
+  filter(transmitter_id %in% HalaviTaggingMetadata$transmitter_id)
+  
 
 # lets take just the quman tags that are dead
-tags <- HalaviTaggingMetadata %>% 
-  filter(capture_island == "Quman") %>% 
-  mutate(end_date = tag_activation_date+est_tag_life) %>% 
-  filter(end_date <= date("2025-01-01")) %>% pull(transmitter_id)
+# tags <- HalaviTaggingMetadata %>% 
+#   filter(capture_island == "Quman") %>% 
+#   #mutate(end_date = tag_activation_date+est_tag_life) %>% 
+#   #filter(end_date <= date("2025-01-01")) %>%
+#   pull(transmitter_id)
 
 # heres the dataset
 dets <- dets %>% 
-  filter(transmitter_id %in% tags)
+  #filter(transmitter_id %in% tags) %>% 
+  mutate(date = date(detection_timestamp_utc)) %>% 
+  arrange(detection_timestamp_utc)
 
 library(ggplot2)
 library(sf)
@@ -114,7 +119,7 @@ n_med <- function(x){
 }
 
 length_plot <- HalaviTaggingMetadata %>% 
-  filter(transmitter_id %in% tags) %>% 
+  #filter(transmitter_id %in% tags) %>% 
   ggplot(aes(x=life_stage, y = length_cm)) +
   geom_boxplot(outlier.shape = NA) +
   geom_point(size = 1.5,alpha = .6,
@@ -149,11 +154,11 @@ abacus <- dets %>%
   mutate(date = date(detection_timestamp_utc)) %>% 
   group_by(transmitter_id, station_no) %>% distinct(date, .keep_all = T) %>% 
   ggplot() +
-  geom_point(aes(x = date, y = reorder(transmitter_id, tag_activation_date, decreasing = T)), shape = 20) +
-  geom_point(data = HalaviTaggingMetadata %>% filter(transmitter_id %in% tags),
-             aes(x=tag_activation_date, y = transmitter_id), shape = 4, color = "green") +
-  geom_point(data = HalaviTaggingMetadata %>% filter(transmitter_id %in% tags),
-             aes(x=end_date, y = transmitter_id),color = "red", shape = 4) +
+  geom_point(aes(x = date, y = reorder(transmitter_id, tag_activation_date, decreasing = T), color = otn_array), shape = 20) +
+  # geom_point(data = HalaviTaggingMetadata,
+  #            aes(x=tag_activation_date, y = transmitter_id), shape = 4, color = "green") +
+  # geom_point(data = HalaviTaggingMetadata %>% filter(transmitter_id %in% tags),
+  #            aes(x=end_date, y = transmitter_id),color = "red", shape = 4) +
   theme_minimal() +
   scale_x_date(date_labels = "%b-%Y") +
   labs(
@@ -281,7 +286,7 @@ data_sf <- st_as_sf(station_counts, coords = c("deploy_long", "deploy_lat"), crs
 data_utm <- st_transform(data_sf, crs = 32637)
 
 stations <- dets %>% distinct(station_no, .keep_all = T) %>% 
-  select(station_no, deploy_lat, deploy_long) %>%
+  dplyr::select(station_no, deploy_lat, deploy_long) %>%
   st_as_sf( coords = c("deploy_long", "deploy_lat"), crs = 4326) %>% st_transform(crs = 32637)
 
 # Create a ggplot object
@@ -318,7 +323,7 @@ dets %>% group_by(transmitter_id) %>%
 data <- dets %>% group_by(transmitter_id) %>% 
   mutate(n_stations = n_distinct(station_no)) %>% 
   distinct(transmitter_id, .keep_all = T) %>% 
-  select(transmitter_id, n_stations, length_cm) 
+  dplyr::select(transmitter_id, n_stations, length_cm) 
 
 
 # Remove missing data
@@ -328,7 +333,7 @@ data_clean <- data %>% filter(!is.na(length_cm))
 spearman_corr <- cor(data_clean$n_stations, data_clean$length_cm, method = "spearman")
 spearman_corr
 
-# Pearson's correlation (if appropriate)
+# Pearson's correlation 
 pearson_corr <- cor(data_clean$n_stations, data_clean$length_cm, method = "pearson")
 pearson_corr
 
@@ -378,25 +383,64 @@ station_length <- ggplot(data_clean, aes(x = length_cm, y = n_stations)) +
 ggsave("plots/station_length.png",station_length, dpi = 360, width = 8, height = 6, units = "in")
 
 
+
+# season by location ------------------------------------------------------
+
+
+getSeason <- function(input.date){
+  numeric.date <- 100*month(input.date)+day(input.date)
+  ## input Seasons upper limits in the form MMDD in the "break =" option:
+  cuts <- base::cut(numeric.date, breaks = c(0,319,0620,0921,1220,1231)) 
+  # rename the resulting groups (could've been done within cut(...levels=) if "Winter" wasn't double
+  levels(cuts) <- c("Winter","Spring","Summer","Fall","Winter")
+  return(cuts)
+}
+
+det_szn <- dets %>% 
+  mutate(season = getSeason(detection_timestamp_utc))
+
+shape.data <- sf::st_read("SpatialData/AlWajhIslands/AlWajhIslands.shp") %>% 
+  filter(IslandName == "Quman") %>% st_transform(32637)
+
+ggplot(det_szn %>% filter(transmitter_id %in% unique(det_szn$transmitter_id)[1:10])) +
+  geom_point(aes(x= deploy_long, y = deploy_lat, color = transmitter_id), position = "jitter") +
+  facet_grid(transmitter_id~season)
+
+ggplot(det_szn %>% filter(transmitter_id %in% unique(det_szn$transmitter_id)[11:25])) +
+  geom_point(aes(x= deploy_long, y = deploy_lat, color = transmitter_id), position = "jitter") +
+  facet_grid(transmitter_id~season)
+
+
+
+det_szn %>% group_by(deploy_lat, deploy_long, season, station_no) %>% 
+  count() %>% ungroup(deploy_lat, deploy_long, season) %>% 
+  filter(n == max(n)) %>% 
+  ggplot() +
+  #geom_sf(data = shape.data) +
+  geom_point(aes(x= deploy_long, y = deploy_lat, color = season))
+
+
+
+
 # Animation ---------------------------------------------------------------
 
-library(ggplot2)
-library(stringr)
-library(sf)
-library(gganimate)
-library(forcats)
-
-df_r <- dets %>%
-  filter(date > as.Date('04-27-2023',format ="%m-%d-%Y"))
-
-sum <- dets %>%
-  filter(date > as.Date('04-27-2023',format ="%m-%d-%Y")) %>% 
-  distinct(transmitter_id, station_name, .keep_all = T) %>%
-  group_by(transmitter_id) %>%
-  summarize(Detected_Stations = paste(station_name, collapse = ', '),
-            length = first(length_m),
-            class = first(life_stage)) %>% 
-  mutate(num_stations = str_count(Detected_Stations, ",")+1) 
+# library(ggplot2)
+# library(stringr)
+# library(sf)
+# library(gganimate)
+# library(forcats)
+# 
+# df_r <- dets %>%
+#   filter(date > as.Date('04-27-2023',format ="%m-%d-%Y"))
+# 
+# sum <- dets %>%
+#   filter(date > as.Date('04-27-2023',format ="%m-%d-%Y")) %>% 
+#   distinct(transmitter_id, station_name, .keep_all = T) %>%
+#   group_by(transmitter_id) %>%
+#   summarize(Detected_Stations = paste(station_name, collapse = ', '),
+#             length = first(length_m),
+#             class = first(life_stage)) %>% 
+#   mutate(num_stations = str_count(Detected_Stations, ",")+1) 
 
 
 
@@ -408,21 +452,20 @@ library(gganimate)
 library(purrr)
 library(pathroutr)
 
-fish <- dets_og %>% filter(transmitter_id == "A69-1605-60") %>% 
-  mutate(run = cumsum(receiver_sn != lag(receiver_sn, default = first(receiver_sn)))) %>%
+fish <- dets %>% arrange(detection_timestamp_utc) %>% filter(transmitter_id == "A69-1605-60") %>% 
+  mutate(run = cumsum(c(0, diff(as.integer(factor(station_no))) != 0))) %>% 
   group_by(run) %>%
   slice(1) %>%
   ungroup() %>% 
-  filter(date > as.Date('04-27-2023',format ="%m-%d-%Y")) %>% 
-  slice(1:250)
+  filter(date > as.Date('04-27-2023',format ="%m-%d-%Y")) 
 
-data_sf <- st_as_sf(fish, coords = c("longitude", "latitude"), crs = 4326)
+data_sf <- st_as_sf(fish, coords = c("deploy_long", "deploy_lat"), crs = 4326)
 data_utm <- st_transform(data_sf, crs = 32637)
 
 shape.data <- sf::st_read("SpatialData/AlWajhIslands/AlWajhIslands.shp") %>% 
   filter(IslandName == "Quman") %>% st_transform(32637)
 
-path <- fish %>% dplyr::select(longitude, latitude)
+path <- fish %>% dplyr::select(deploy_long, deploy_lat)
 path <- SpatialPoints(path, proj4string = CRS("+proj=longlat +datum=WGS84 +no_defs"))
 
 path <-  st_as_sf(path)  %>% st_transform(32637)
@@ -460,4 +503,5 @@ pathroutrplot.animation <-
 
 # upping the frame rate reduces cross over
 gganimate::animate(pathroutrplot.animation, nframes=300, detail=2)
+
 

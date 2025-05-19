@@ -18,7 +18,7 @@ SaudiSUN <- getSunlightTimes(distinct(dets_tz, date_a)$date_a,
 dets_tz_tod <- dets_tz %>% 
   left_join(SaudiSUN, by = c("date_a" = "date")) %>%
   mutate(tod = ifelse(date_times_a >= sunrise & date_times_a < sunset, 'Day', 'Night')) %>% 
-  select(-c(lat, lon, sunrise, sunset))
+  dplyr::select(-c(lat, lon, sunrise, sunset))
 
 
 

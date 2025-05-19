@@ -16,14 +16,10 @@ df <- dets %>%
   mutate(detection_time = ymd_hms(detection_timestamp_utc),
          year = year(detection_time),
          month = month(detection_time, label = FALSE),
-         season = case_when(
-           month %in% c(12, 1, 2) ~ 'Winter',
-           month %in% c(3, 4, 5)  ~ 'Spring',
-           month %in% c(6, 7, 8)  ~ 'Summer',
-           TRUE                    ~ 'Fall'),
+         season  = getSeason(detection_timestamp_utc),
          location = case_when(
-           station_name %in% c("Qu3", "Qu2", "Qu1") ~ 'North',
-           station_name %in% c("Qu15", "Qu9")  ~ 'East',
+           station_no %in% c("Qu3", "Qu2", "Qu1") ~ 'North',
+           station_no %in% c("Qu15", "Qu9")  ~ 'East',
            TRUE ~ 'Other'))
 
 df %>%
@@ -92,7 +88,7 @@ df_movements <- df_filtered %>%
 # Create a new data frame that includes only the necessary variables for modeling
 movement_data <- df_movements %>%
   filter(!is.na(movement_occurred)) %>%
-  select(transmitter_id, movement_occurred, season, life_stage)
+  dplyr::select(transmitter_id, movement_occurred, season, life_stage)
 
 # Run a Bayesian logistic regression model
 movement_model <- brm(
