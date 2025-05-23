@@ -96,11 +96,13 @@ recaps <- caps %>% filter(ID %in% recap_ind) %>% filter(!is.na(TL))
 sns <- fish %>% distinct(tag_serial_number) %>% pull()
 
 sns_ID <-recaps %>% filter(acoustic_sn %in% sns) %>% pull(ID)
-ahhh <- caps %>% filter(ID %in% sns_ID) %>% filter(!is.na(TL))
+acoustic_recaps <- caps %>% filter(ID %in% sns_ID) %>% filter(!is.na(TL))
+
+# lets use all the fish
+all_recaps <- caps %>% filter(!is.na(TL))
 
 
-
-df <- ahhh %>% 
+df <- all_recaps %>% 
   mutate(key = 1) %>% 
   group_by(ID) %>% 
   mutate(cap = cumsum(key)) %>% dplyr::select(-key) %>% 
@@ -116,7 +118,7 @@ df %>% filter(!is.na(growth_per_year)) %>% arrange(ID, Date) %>% View()
 
 
 
-ggplot(caps) +
+ggplot(all_recaps) +
   geom_histogram(aes(x=TL))
 
 TL <-caps %>% filter(!is.na(TL)) %>% pull(TL)
@@ -138,3 +140,11 @@ caps %>% filter(grepl("umbilical", Comments, ignore.case = T)) %>% View()
 # @ 35.9 with scar
 
 # min - 36 is YOY?
+
+
+df2 <- df %>% filter(!is.na(growth_per_year)) %>% arrange(ID, Date) %>% filter(days_diff > 100 & growth_per_year < 100)
+ggplot(df2, aes(x = TL, y = growth_per_year, color = Lifestage )) +
+  geom_point() 
+
+# 40, and 45+
+# adults at 80 
