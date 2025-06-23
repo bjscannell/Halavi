@@ -1,4 +1,8 @@
-
+library(gghalves)
+library(ggdist)
+library(scales) 
+library(ggbeeswarm)
+library(patchwork)
 
 # Residency Index ---------------------------------------------------------
 
@@ -18,36 +22,6 @@ monthly_res <- dets %>%
   select(transmitter_id, month, otn_array, sex, length_cm, 
          length2_cm, new_class, monthly_res) 
   
-# 
-#   dets %>%
-#   mutate(month = month(date),
-#          month_day = format(as.Date(date), "%d-%m")) %>% 
-#   group_by(transmitter_id, month) %>% 
-#   summarise(
-#     transmitter_id = first(transmitter_id),
-#     sex = first(sex),
-#     length2_cm = first(length2_cm),
-#     length_cm = first(length_cm),
-#     life_stage = first(new_class),
-#     otn_array = first(otn_array),
-#     Deployment_Date = first(tag_activation_date),
-#     # Last_Detection = max(date),
-#     # First_Detection = min(date),
-#     # Days_Liberty = as.numeric(first(Last_Detection) - first(First_Detection)) + 1,
-#     # Tag_on = first(date),
-#     # Tag_off = first(date) + days(first(est_tag_life)),
-#     # Days_Monitored = if_else(first(Last_Detection) > first(Tag_off),
-#     #                          first(Last_Detection) - first(Tag_on) + 1,
-#     #                          first(Tag_off) - first(Tag_on) +1),
-#     Days_Present = length(unique(month_day)),
-#     #residency_max = as.numeric(Days_Present) / as.numeric(Days_Liberty),
-#     #residency_min = as.numeric(Days_Present)/ as.numeric(Days_Monitored),
-#     #res_ratio = as.numeric(Days_Liberty)/ as.numeric(Days_Monitored),
-#     monthly_res = Days_present/(days_in_month(month))) %>%
-#   distinct(transmitter_id, month, .keep_all = T) %>% 
-#   dplyr::select(transmitter_id, month, otn_array, sex, length_cm, 
-#                 length2_cm, life_stage, monthly_res)
-
 
 # Roaming Index -----------------------------------------------------------
 
@@ -111,15 +85,13 @@ quota_halves_sex <- ggplot(overall_metrics, aes(x = Sex, y = residency_min)) +
   scale_fill_viridis_d(option = "plasma", end = 0.8) +
   scale_color_viridis_d(option = "plasma", end = 0.8) +
   guides(color = "none", fill = "none") +
-  labs(x = "Sex", y = "Residency Index") +
-  theme_clean()
+  labs(x = "Sex", y = "Residency Index") 
 
 quota_densities_sex <- ggplot(overall_metrics, aes(x = residency_min, fill = Sex)) +
   geom_density(alpha = 0.6) +
   scale_x_continuous(labels = label_percent()) +
   scale_fill_viridis_d(option = "plasma", end = 0.8) +
   labs(x = "Residency Index", y = "Density", fill = "Sex") +
-  theme_clean() +
   theme(legend.position = "bottom")
 
 res_sex <- quota_halves_sex | quota_densities_sex
@@ -146,7 +118,6 @@ quota_densities_class <- ggplot(overall_metrics, aes(x = residency_min, fill = C
   scale_x_continuous(labels = label_percent()) +
   scale_fill_viridis_d(option = "plasma", end = 0.8) +
   labs(x = "Residency Index", y = "Density", fill = "Age Class") +
-  theme_clean() +
   theme(legend.position = "bottom")
 
 res_class <-quota_halves_class | quota_densities_class
@@ -163,8 +134,7 @@ ggplot(overall_metrics %>% drop_na(residency_min), aes(x = TL, y = residency_min
   #                 seed = 1234) +
   scale_y_continuous(labels = label_percent()) +
   #scale_color_manual(values = c("grey30", "#FF4136"), guide = "none") +
-  labs(x = "TL", y = "residency index") +
-  theme_clean()
+  labs(x = "TL", y = "residency index") 
 
 # Monthly residency
 ggplot(monthly_metrics, aes(x = as.factor(month), y = monthly_res)) +
@@ -176,8 +146,7 @@ ggplot(monthly_metrics, aes(x = as.factor(month), y = monthly_res)) +
   scale_fill_viridis_d(option = "plasma", end = 0.8) +
   scale_color_viridis_d(option = "plasma", end = 0.8) +
   guides(color = "none") +
-  labs(x = "Month", y = "Residency Index") +
-  theme_clean()
+  labs(x = "Month", y = "Residency Index") 
 
 ggsave("plots/monthly_res_sex.png", dpi = 300)
 
@@ -190,8 +159,7 @@ ggplot(monthly_metrics, aes(x = as.factor(month), y = monthly_res)) +
   scale_fill_viridis_d(option = "plasma", end = 0.8) +
   scale_color_viridis_d(option = "plasma", end = 0.8) +
   guides(color = "none") +
-  labs(x = "Month", y = "Residency Index") +
-  theme_clean()
+  labs(x = "Month", y = "Residency Index") 
 
 ggplot(monthly_metrics) +
   geom_smooth(aes(x=month, y= monthly_res, color = new_class))
@@ -296,6 +264,8 @@ ggplot(pred_res_month, aes(x = month, y = .epred, color = sex)) +
 
 library(brms)
 
+# We have to use an ordered BetaRegression so run OrderedBetaRegression.R script before
+
 
 # Fit the model
 brms_fit <- brm(RI ~ 0 + Intercept + TL + Sex , data=overall_metrics,
@@ -397,7 +367,6 @@ quota_densities_sex_roam <- ggplot(overall_metrics, aes(x = RI, fill = Sex)) +
   scale_x_continuous(labels = label_percent()) +
   scale_fill_viridis_d(option = "plasma", end = 0.8) +
   labs(x = "Residency Index", y = "Density", fill = "Sex") +
-  theme_clean() +
   theme(legend.position = "bottom")
 
 roam_sex <- quota_halves_sex_roam | quota_densities_sex_roam
@@ -453,3 +422,216 @@ ggplot(monthly_metrics, aes(x = RI, y = as.factor(month), fill = sex)) +
   theme(legend.position = "bottom")
 
 ggsave("plots/monthly_roam_sex.png", dpi = 300)
+
+
+# more stuff. go through and clean ----------------------------------------
+
+
+overall_metrics <- overall_metrics %>%  filter(TL < 70)
+monthly_metrics <- monthly_metrics %>%  filter(length_cm < 70)
+
+
+
+library(tidyverse)
+library(ggplot2)
+library(broom)
+library(ggpubr)
+library(emmeans)
+library(car)
+
+
+overall_metrics <- overall_metrics %>%
+  mutate(Sex = factor(Sex),
+         Class = factor(Class))
+
+# Quick check of structure
+str(overall_metrics)
+summary(overall_metrics)
+
+
+# Boxplots
+ggplot(overall_metrics, aes(x = Sex, y = residency_min, fill = Class)) +
+  geom_boxplot() +
+  labs(title = "Residency Min by Sex and Class") +
+  theme_minimal()
+
+ggplot(overall_metrics, aes(x = Sex, y = RI, fill = Class)) +
+  geom_boxplot() +
+  labs(title = "RI by Sex and Class") +
+  theme_minimal()
+
+
+ggplot(overall_metrics, aes(x = TL, y = residency_min)) +
+  geom_point() +
+  geom_smooth() +
+  theme_minimal()
+
+ggplot(overall_metrics, aes(x = TL, y = RI)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  theme_minimal()
+
+
+kruskal.test(residency_min ~ interaction(Sex, Class), data = overall_metrics)
+kruskal.test(RI ~ interaction(Sex, Class), data = overall_metrics)
+
+library(brms)
+
+# Model monthly_res (or residency_min) ~ predictors + random effect on transmitter_id
+# Use zero-one inflated beta to allow 0 and 1 values
+
+# Fit beta regression model
+fit_beta <- brm(
+  residency_min ~ TL + Sex + Class + (1 | transmitter_id),
+  data = overall_metrics,
+  family = Beta(),
+  cores = 4, chains = 4, iter = 2000,
+  control = list(adapt_delta = 0.95)
+)
+
+
+summary(fit_beta)
+# Plot marginal effect of TL
+# marg_eff <- marginal_effects(fit_beta, effects = "TL", probs = c(0.1, 0.9))
+# plot(marg_eff, plot = FALSE)[[1]] + 
+#   ggtitle("Marginal Effect of TL on Residency") +
+#   theme_minimal()
+
+# marg_eff_interact <- marginal_effects(fit_beta, effects = "TL:Sex")
+# plot(marg_eff_interact, plot = FALSE)[[1]] + 
+#   ggtitle("Interaction: TL by Sex") +
+#   theme_minimal()
+
+
+# Create prediction data
+newdata <- expand.grid(
+  TL = seq(min(overall_metrics$TL), max(overall_metrics$TL), length.out = 100),
+  Sex = unique(overall_metrics$Sex),
+  Class = unique(overall_metrics$Class),
+  transmitter_id = "A69-1605-52"  # marginalize over random effect
+)
+
+# Get predicted posterior means
+preds <- posterior_epred(fit_beta, newdata = newdata, re_formula = NA)
+
+# Summarize predictions
+pred_summary <- data.frame(
+  newdata,
+  pred_mean = apply(preds, 2, mean),
+  pred_lower = apply(preds, 2, quantile, probs = 0.05),
+  pred_upper = apply(preds, 2, quantile, probs = 0.95)
+)
+
+
+
+ggplot() +
+  geom_point(data = overall_metrics, aes(x = TL, y = residency_min, color = Sex), alpha = 0.5) +
+  geom_line(data = pred_summary, aes(x = TL, y = pred_mean, color = Sex), size = 1) +
+  geom_ribbon(data = pred_summary, aes(x = TL, ymin = pred_lower, ymax = pred_upper, fill = Sex), alpha = 0.2) +
+  labs(title = "Predicted Residency by TL and Sex", y = "Residency (Beta scale)", x = "TL") +
+  theme_minimal()
+
+
+# monthly -----------------------------------------------------------------
+
+library(tidyverse)
+library(mgcv)
+library(gratia)  # for visualization and diagnostics
+
+
+monthly_metrics <- monthly_metrics %>%
+  mutate(
+    sex = factor(sex),
+    new_class = factor(new_class),
+    transmitter_id = factor(transmitter_id),
+    month = as.numeric(month)  # make sure month is numeric
+  ) %>%
+  drop_na(monthly_res, length_cm)
+
+
+gam4_qb <- gam(
+  monthly_res ~ length_cm + s(month) + s(transmitter_id, bs = "re"),
+  data = monthly_metrics,
+  family = quasibinomial(link = "logit"),
+  method = "REML"
+)
+
+summary(gam4_qb)
+appraise(gam4_qb)
+draw(gam4_qb, select = c(1, 2))  # Only draw smooth terms, skip random effects
+
+# Generate prediction data across TL range
+newdata_month <- data.frame(
+  length_cm = mean(monthly_metrics$length_cm, na.rm = TRUE),
+  month = seq(1, 12, by = 0.1),
+  transmitter_id = "A69-1605-58"                    
+)
+
+# Predict
+pred_monthly_res <- predict(gam4_qb, newdata = newdata_month, se.fit = TRUE, type = "response")
+
+newdata_monthly_res <- newdata_month %>%
+  mutate(fit = pred_monthly_res$fit,
+         se = pred_monthly_res$se.fit,
+         lower = fit - 1.96 * se,
+         upper = fit + 1.96 * se)
+
+# Plot
+ggplot(newdata_monthly_res, aes(x = month, y = fit)) +
+  #geom_point(data = monthly_metrics, aes(x = month, y = monthly_res)) +
+  geom_line(color = "darkgreen", linewidth = 1.2) +
+  geom_ribbon(aes(ymin = lower, ymax = upper), fill = "green", alpha = 0.3) +
+  labs(title = "Effect of Total Length on Monthly Residency",
+       x = "Month", y = "Predicted Monthly Residency") +
+  theme_minimal(base_size = 14)
+
+
+
+library(tidyverse)
+library(mgcv)
+library(gratia)  # for visualization and diagnostics
+
+
+monthly_metrics <- monthly_metrics %>%
+  mutate(
+    sex = factor(sex),
+    new_class = factor(new_class),
+    transmitter_id = factor(transmitter_id),
+    month = as.numeric(month)  # make sure month is numeric
+  ) %>%
+  drop_na(monthly_res, length_cm)
+
+gam_RI <- gam(
+  monthly_res ~ length_cm + s(month) + s(transmitter_id, bs = "re"),
+  data = monthly_metrics,
+  family = quasibinomial(link = "logit"),
+  method = "REML"
+)
+summary(gam_RI)
+appraise(gam_RI)
+draw(gam_RI, select = c(1, 2))  # Only draw smooth terms, skip random effects
+
+# Generate prediction data across TL range
+newdata_month <- data.frame(
+  length_cm = mean(monthly_metrics$length_cm, na.rm = TRUE),
+  month = seq(1, 12, by = 0.1),
+  transmitter_id = "A69-1605-52"                     # ignore random effect
+)
+
+# Predict
+pred_monthRI <- predict(gam_RI, newdata = newdata_month, se.fit = TRUE, type = "response")
+
+newdata_monthRI <- newdata_month %>%
+  mutate(fit = pred_monthRI$fit,
+         se = pred_monthRI$se.fit,
+         lower = fit - 1.96 * se,
+         upper = fit + 1.96 * se)
+
+# Plot
+ggplot(newdata_monthRI, aes(x = month, y = fit)) +
+  geom_line(color = "darkgreen", linewidth = 1.2) +
+  geom_ribbon(aes(ymin = lower, ymax = upper), fill = "green", alpha = 0.3) +
+  labs(title = "Effect of Total Length on Monthly Residency",
+       x = "Month", y = "Predicted Monthly Residency") +
+  theme_minimal(base_size = 14)
+

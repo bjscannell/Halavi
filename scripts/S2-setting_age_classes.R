@@ -1,16 +1,8 @@
-
-# length classes  ---------------------------------------------------------
-
-
-n_med <- function(x){
-  return(data.frame(y =5, 
-                    label = paste0("", round(median(x),digits =3))))
-}
-
-HalaviTaggingMetadata$life_stage <- factor(HalaviTaggingMetadata$life_stage, levels = c("ADULT", "SUB", "JUV", "YOY", "NEO"))
-
-
-ggsave("Halavi_lifestages.png", width = 12.5, height = 8.5, dpi = 360)
+##################################################
+#' Script assessing the growth and assigning life
+#' stages to our Halavi based loosely off our 
+#' recapture data.
+#################################################
 
 
 library(dplyr)
@@ -19,11 +11,28 @@ library(ggnewscale)
 library(ggplot2)
 library(RColorBrewer)
 
+# length classes  ---------------------------------------------------------
+
+# function to get the number of individuals in each class
+n_fun <- function(x){
+  return(data.frame(y = 0, 
+                    label = paste0("n = ",length(x))))
+}
+
+# function to get the median age within the group
+n_med <- function(x){
+  return(data.frame(y = quantile(x, prob = 0.25) - 6, 
+                    label = paste0("", round(median(x),digits =3))))
+}
+
+HalaviTaggingMetadata$life_stage <- factor(HalaviTaggingMetadata$life_stage, levels = c("ADULT", "SUB", "JUV", "YOY", "NEO"))
+
+
 length_range <- HalaviTaggingMetadata %>% group_by(life_stage) %>% 
   summarise(max_l = max(length_cm),
             min_l = min(length_cm))
 
-
+# See if the measurement is contained within more than one age group
 # Join based on condition: length_cm >= min and length_cm <= max
 HalaviTaggingMetadata_matched <- HalaviTaggingMetadata %>% dplyr::select(life_stage, length_cm, tag_serial_number) %>% 
   fuzzy_left_join(
@@ -76,12 +85,12 @@ lp <- problem %>%
     plot.margin = margin(1,1,1.5,1.2, "cm")
   )
 
+lp
+
 ggsave("plots/length_isssues.png", width = 12.5, height = 8.5, dpi = 360)
 
 
 # growth rates ------------------------------------------------------------
-
-
 
 caps <- read_csv("data/tags/capture_data.csv") %>% dplyr::select(ID, Date, TL, DW, Wt_g, Recapture, Lifestage, acoustic_sn) %>%
   mutate(Date = dmy(Date),

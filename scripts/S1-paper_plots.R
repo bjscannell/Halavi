@@ -144,6 +144,9 @@ layout
 
 ggsave("plots/hotspot.png", dpi = 360)
 
+
+# residency table ---------------------------------------------------------
+
 res %>% 
   select(1:8,11, 17, 18,20,21) %>% arrange(Deployment_Date) %>% kbl() %>% 
   kable_classic(full_width = F, html_font = "Cambria")
