@@ -13,16 +13,16 @@ HalaviTaggingMetadata$life_stage <- factor(HalaviTaggingMetadata$life_stage, lev
 ggsave("Halavi_lifestages.png", width = 12.5, height = 8.5, dpi = 360)
 
 
+library(dplyr)
+library(fuzzyjoin)
+library(ggnewscale)
+library(ggplot2)
+library(RColorBrewer)
 
 length_range <- HalaviTaggingMetadata %>% group_by(life_stage) %>% 
   summarise(max_l = max(length_cm),
             min_l = min(length_cm))
 
-
-library(dplyr)
-library(fuzzyjoin)
-library(ggnewscale)
-library(RColorBrewer)
 
 # Join based on condition: length_cm >= min and length_cm <= max
 HalaviTaggingMetadata_matched <- HalaviTaggingMetadata %>% dplyr::select(life_stage, length_cm, tag_serial_number) %>% 
@@ -76,7 +76,7 @@ lp <- problem %>%
     plot.margin = margin(1,1,1.5,1.2, "cm")
   )
 
-ggsave("length_isssues.png", width = 12.5, height = 8.5, dpi = 360)
+ggsave("plots/length_isssues.png", width = 12.5, height = 8.5, dpi = 360)
 
 
 # growth rates ------------------------------------------------------------
@@ -93,10 +93,10 @@ recap_ind <- caps %>% filter(Recapture == "Y" & !is.na(ID)) %>% pull(ID)
 recaps <- caps %>% filter(ID %in% recap_ind) %>% filter(!is.na(TL))
 
 # lets only use our fish 
-sns <- fish %>% distinct(tag_serial_number) %>% pull()
-
-sns_ID <-recaps %>% filter(acoustic_sn %in% sns) %>% pull(ID)
-acoustic_recaps <- caps %>% filter(ID %in% sns_ID) %>% filter(!is.na(TL))
+# sns <- fish %>% distinct(tag_serial_number) %>% pull()
+# 
+# sns_ID <-recaps %>% filter(acoustic_sn %in% sns) %>% pull(ID)
+# acoustic_recaps <- caps %>% filter(ID %in% sns_ID) %>% filter(!is.na(TL))
 
 # lets use all the fish
 all_recaps <- caps %>% filter(!is.na(TL))
@@ -114,9 +114,10 @@ df <- all_recaps %>%
          delta_TL = TL-prev_TL,
          growth_per_year = delta_TL/years_diff)
 
-df %>% filter(!is.na(growth_per_year)) %>% arrange(ID, Date) %>% View()
+df <- df %>% filter(!is.na(growth_per_year)) %>% arrange(ID, Date) 
 
 
+View(df)
 
 ggplot(all_recaps) +
   geom_histogram(aes(x=TL))
@@ -134,17 +135,29 @@ as.data.frame(cbind(TL,cl$cluster)) %>% group_by(V2) %>%
   arrange(minTL)
 
 
-caps %>% filter(grepl("umbilical", Comments, ignore.case = T)) %>% View()
 
 # How long do umbicilical scars last in gluc? We captured one 
 # @ 35.9 with scar
 
 # min - 36 is YOY?
 
-
+library(gghighlight)
 df2 <- df %>% filter(!is.na(growth_per_year)) %>% arrange(ID, Date) %>% filter(days_diff > 100 & growth_per_year < 100)
-ggplot(df2, aes(x = TL, y = growth_per_year, color = Lifestage )) +
-  geom_point() 
+
+ggplot(df2, aes(x = TL, y = growth_per_year, color = as.factor(ID))) +
+  geom_point(size = 4) +
+  gghighlight(ID == 3706,
+              unhighlighted_params = list(linewidth = 1, colour = alpha("black", 0.4))) +
+  guides(colour="none") +
+  coord_cartesian(ylim = c(0, 30)) +
+  theme_bw()
+  
+ggsave("plots/growth.png", dpi = 360)
 
 # 40, and 45+
 # adults at 80 
+
+new_class <- data.frame(class = c("YOY", "JUV", "ADULT"),
+           age = c("25-40", "40-80", "80+"))
+new_class %>% kbl() %>% 
+  kable_classic(full_width = F, html_font = "Cambria")

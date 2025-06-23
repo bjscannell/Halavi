@@ -24,19 +24,19 @@ HalaviTaggingMetadata %>%
 # Location ----------------------------------------------------------------
 HalaviTaggingMetadata %>% 
   group_by(year) %>% 
-  count(release_location)
+  count(capture_island)
 
 
 
 # Size Metrics -------------------------------------------------------------------------
 HalaviTaggingMetadata %>% 
   group_by(year) %>% 
-  summarise(min_l = min(length_m, na.rm = T),
-            max_l = max(length_m, na.rm = T),
-            avg_l = mean(length_m, na.rm = T),
-            min_d = min(length2_m, na.rm = T),
-            max_d = max(length2_m, na.rm = T),
-            avg_d = mean(length2_m, na.rm = T))
+  summarise(min_l = min(length_cm, na.rm = T),
+            max_l = max(length_cm, na.rm = T),
+            avg_l = mean(length_cm, na.rm = T),
+            min_d = min(length2_cm, na.rm = T),
+            max_d = max(length2_cm, na.rm = T),
+            avg_d = mean(length2_cm, na.rm = T))
 
   
 HalaviTaggingMetadata %>% 

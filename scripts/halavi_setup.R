@@ -11,7 +11,12 @@ HalaviTaggingMetadata <- read_csv("data/tags/HalaviTaggingMetadata.csv",
                                   col_types = cols(UTC_RELEASE_DATE_TIME = col_datetime(format = "%m/%d/%y %H:%M"),
                                                    TAG_ACTIVATION_DATE = col_date(format = "%d-%b-%y"))) %>%  clean_names() %>% 
   mutate(year = year(utc_release_date_time),
-         end_date = tag_activation_date+est_tag_life)
+         end_date = tag_activation_date+est_tag_life) %>% 
+  mutate(new_class = case_when(
+    length_cm < 40 ~ "YOY",
+    length_cm >= 80 ~ "ADULT",
+    .default = "JUV"
+  )) 
 
 
 HalaviArray <- read_csv("data/stations/HalaviArray.csv", 
@@ -82,9 +87,9 @@ dets <-  glatos::false_detections(dets_g, tf = 3600) %>% filter(passed_filter ==
 dets <- dets %>% left_join(HalaviTaggingMetadata, by = "transmitter_id")
 
 # remove the first line
-dets <- dets %>% 
-  filter(!str_detect(station_no, "GH")) %>% 
-  filter(transmitter_id %in% HalaviTaggingMetadata$transmitter_id)
+# dets <- dets %>% 
+#   filter(!str_detect(station_no, "GH")) %>% 
+#   filter(transmitter_id %in% HalaviTaggingMetadata$transmitter_id)
   
 
 # lets take just the quman tags that are dead
@@ -95,10 +100,23 @@ dets <- dets %>%
 #   pull(transmitter_id)
 
 # heres the dataset
-dets <- dets %>% 
-  #filter(transmitter_id %in% tags) %>% 
+
+
+dets <- dets %>% ungroup() %>% 
+  filter(str_detect(station_no,  paste(c("GH06", "GH14"), collapse = "|")) |
+           !str_detect(station_no, "GH")) %>% 
+  mutate(station_no = case_when(
+    station_no == "GH06" ~ "Qu2",
+    station_no == "GH14" ~ "Qu3",
+    .default = station_no
+  )) %>% 
+  filter(transmitter_id %in% HalaviTaggingMetadata$transmitter_id) %>% 
+  filter(year(utc_release_date_time) < year("2025-05-27 08:27:38")) %>% 
+  filter(new_class != "ADULT") %>% 
   mutate(date = date(detection_timestamp_utc)) %>% 
   arrange(detection_timestamp_utc)
+
+
 
 library(ggplot2)
 library(sf)
@@ -120,17 +138,18 @@ n_med <- function(x){
 
 length_plot <- HalaviTaggingMetadata %>% 
   #filter(transmitter_id %in% tags) %>% 
-  ggplot(aes(x=life_stage, y = length_cm)) +
+  ggplot(aes(x=new_class, y = length_cm)) +
   geom_boxplot(outlier.shape = NA) +
   geom_point(size = 1.5,alpha = .6,
              position = position_jitter(seed = 1, width = .1)) +
-  scale_x_discrete(name = "Life Stage",
-                   labels = c("Juvenile", "Young of the Year")) +
-  scale_y_continuous(name = "Length (cm)",
-                     breaks = seq(25,75,10),
-                     limits = c(25,75)) +
-  stat_summary(geom = "text",fun.data = n_fun, vjust = 5) +
-  stat_summary(geom = "text",fun.data = n_med, size = 5) +
+  # scale_x_discrete(name = "Life Stage",
+  #                  labels = c("Juvenile", "Young of the Year")) +
+  # scale_y_continuous(name = "Length (cm)",
+  #                    breaks = seq(25,75,10),
+  #                    limits = c(25,75)) +
+  stat_summary(geom = "text",fun.data = n_fun, vjust = 7) +
+  stat_summary(geom = "text",fun.data = n_med, size = 5, vjust = 3) +
+  xlab("\nNew Class") +
   theme_classic() +
   coord_cartesian(clip = "off") +
   theme(
@@ -139,7 +158,7 @@ length_plot <- HalaviTaggingMetadata %>%
     panel.grid.minor = element_blank(),
     panel.grid.major.y = element_blank(),
     axis.text = element_text(size = 15),
-    axis.title = element_text(size = 25),
+    axis.title = element_text(size = 15),
     text = element_text(size = 10)
   )
 
@@ -212,23 +231,30 @@ res <- dets %>% group_by(transmitter_id) %>%
     Sex = first(sex),
     DW = first(length2_cm),
     TL = first(length_cm),
-    Class = first(life_stage),
+    Class = first(new_class),
+    Tagging_Island = first(otn_array),
     Deployment_Date = first(tag_activation_date),
     Last_Detection = max(date),
+    First_Detection = min(date),
     Total_No_Dets = n(),
-    Days_Liberty = max(date) - min(date) + 1,
-    Days_Monitored = as.numeric(mdy('10-02-2024') - first(tag_activation_date)) + 1, # change to pull from sheet
+    Days_Liberty = as.numeric(first(Last_Detection) - first(First_Detection)) + 1,
+    Tag_on = first(tag_activation_date),
+    Tag_off = first(tag_activation_date) + days(first(est_tag_life)),
+    Days_Monitored = if_else(first(Last_Detection) > first(Tag_off),
+                             first(Last_Detection) - first(Tag_on) + 1,
+                             first(Tag_off) - first(Tag_on) +1),
     Days_Present = length(unique(date)),
     residency_max = as.numeric(Days_Present) / as.numeric(Days_Liberty),
     residency_min = as.numeric(Days_Present)/ as.numeric(Days_Monitored),
     res_ratio = as.numeric(Days_Liberty)/ as.numeric(Days_Monitored),
-    res_type = case_when(
-      residency_min >= 0.65 & res_ratio > 0.70 ~ "Resident",
-      residency_min < 0.65 & res_ratio > 0.40 ~ "Intermittent Resident",
-      residency_min < 0.5 & res_ratio <= 0.5 ~ "Transient",
-      TRUE ~ NA_character_),
+    # res_type = case_when(
+    #   residency_min >= 0.65 & res_ratio > 0.70 ~ "Resident",
+    #   residency_min < 0.65 & res_ratio > 0.40 ~ "Intermittent Resident",
+    #   residency_min < 0.5 & res_ratio <= 0.5 ~ "Transient",
+    #   TRUE ~ NA_character_),
     n_stations = n_distinct(station_no)) %>% 
   left_join(consec, by = "transmitter_id")
+
 
 
 # residency plot ----------------------------------------------------------
