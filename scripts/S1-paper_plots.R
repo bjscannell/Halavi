@@ -3,7 +3,9 @@
 
 library(ggspatial)
 library(patchwork)
+library(unit)
 library(kableExtra)
+library(sf)
 
 world <- rnaturalearth::ne_countries(returnclass = "sf", scale = 50) 
 shape.data <- sf::st_read("SpatialData/AlWajhIslands/AlWajhIslands.shp")
@@ -109,6 +111,19 @@ ggsave("plots/abacus.png", dpi = 360)
 
 receiver <- st_as_sf(HalaviArray, coords = c("deploy_long", "deploy_lat"), crs = 4326) %>% distinct(station_no, .keep_all = T) %>% 
   filter(!str_detect(station_no, "GH")) %>% filter(!str_detect(station_no, "Deep"))
+
+station_counts <- dets %>% group_by(station_no) %>% 
+  mutate(n = n()) %>% 
+  distinct(station_no, .keep_all = T)
+
+# Load your shapefile
+shape.data <- sf::st_read("SpatialData/AlWajhIslands/AlWajhIslands.shp")
+
+# Replace "dets" with your data frame containing latitude, longitude, and transmitter_id
+data_sf <- st_as_sf(station_counts, coords = c("deploy_long", "deploy_lat"), crs = 4326)
+
+# Transform to UTM
+data_utm <- st_transform(data_sf, crs = 32637)
 
 Qu <- ggplot() +
   geom_sf(data = shape.data %>% filter(IslandName == "Quman")) +  # Plot shapefile

@@ -28,8 +28,7 @@ HalaviTaggingMetadata <- read_csv("data/tags/HalaviTaggingMetadata.csv",
 
 HalaviArray <- read_csv("data/stations/HalaviArray.csv", 
                         col_types = cols(`DEPLOY_DATE_TIME (yyyy-mm-ddThh:mm:ss)` = col_datetime(format = "%Y-%m-%d %H:%M:%S"), 
-                                         `RECOVER_DATE_TIME (yyyy-mm-ddThh:mm:ss)` = col_datetime(format = "%Y-%m-%d %H:%M:%S")),
-                        n_max=103) 
+                                         `RECOVER_DATE_TIME (yyyy-mm-ddThh:mm:ss)` = col_datetime(format = "%Y-%m-%d %H:%M:%S"))) 
 
 
 files <- list.files("data/detections/halavi_files")
@@ -47,7 +46,7 @@ HalaviArray <- HalaviArray %>%
                          str_extract(FILENAME, "^([^ ]* +){3}[^ ]*"))) %>%
   clean_names()
 
-# HalaviArray %>% left_join(test, by = "names") %>% View()
+#HalaviArray %>% left_join(test, by = "names") %>% View()
 
 
 
@@ -67,7 +66,9 @@ dets_raw <- raw %>% filter(record_type == "DET") %>%
          receiver = field_7,
          tag_id = field_10) %>% 
   filter(!str_detect(tag_id, "A69-1601")) %>% 
-  mutate(id = str_extract(source,  "VR2Tx-69 .*?(?=\\.)"))
+  mutate(id = if_else(str_detect(source,"VR2Tx-69"), 
+                      str_extract(source,  "VR2Tx-69 .*?(?=\\.)"),
+                      str_extract(source,  "VR2W-69 .*?(?=\\.)")))
 
 
 dets <- dets_raw %>% left_join(HalaviArray, by = c("id" = "names")) %>%  
