@@ -11,17 +11,29 @@ resid <- res %>%
   dplyr::select(transmitter_id, residency_min, residency_max, Class)
 
 # monthly
-monthly_res <- dets %>% 
+monthly_res  <- dets %>% 
   mutate(month = month(detection_timestamp_utc),
-         month_day = format(as.Date(date), "%d-%m")) %>% 
-  group_by(transmitter_id, month) %>% 
+         year = year(detection_timestamp_utc),
+         month_day = format(as.Date(date), "%d-%m"),
+         month_year = format(as.Date(date), "%m-%y")) %>% 
+  group_by(transmitter_id, month_year) %>% 
   mutate(n = length(unique(month_day)),
          monthly_res = n/(days_in_month(month)),
-         monthly_res = ifelse(monthly_res > 1, 1, monthly_res)) %>% 
-  distinct(transmitter_id, month, .keep_all = T) %>%
-  select(transmitter_id, month, otn_array, sex, length_cm, 
-         length2_cm, new_class, monthly_res) 
-  
+         monthly_res = ifelse(monthly_res > 1, 1, monthly_res)) %>% ungroup(month_year) %>% 
+  mutate(first_det = min(detection_timestamp_utc),
+         last_det = max(detection_timestamp_utc)) %>% 
+  distinct(transmitter_id, month_year, .keep_all = T) %>% 
+  select(transmitter_id, year, month, otn_array, sex, length_cm, 
+         length2_cm, new_class, monthly_res, first_det, last_det,n, month_year) %>% 
+  ## This is to fix the first month residency index
+  mutate(first_day = day(first_det),
+         first_month = month(first_det),
+         first_year = year(first_det))  %>% 
+  mutate(is_first_month = if_else(month == first_month & year == first_year, 1,0),
+         first_month_day_count = if_else(is_first_month == 1, days_in_month(month)-first_day + 1, NA),
+         monthly_res = if_else(is_first_month == 1, n/first_month_day_count, monthly_res)) 
+
+
 
 # Roaming Index -----------------------------------------------------------
 
