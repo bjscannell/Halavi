@@ -130,7 +130,8 @@ dets <- dets %>% ungroup() %>%
   filter(year(utc_release_date_time) < year("2025-05-27 08:27:38")) %>% 
   filter(new_class != "ADULT") %>% 
   mutate(date = date(detection_timestamp_utc)) %>% 
-  arrange(detection_timestamp_utc)
+  arrange(detection_timestamp_utc) %>% 
+  filter(otn_array != "Turtle Bay")
 
 
 # Adding time of day ------------------------------------------------------
