@@ -3,7 +3,7 @@
 
 library(ggspatial)
 library(patchwork)
-library(unit)
+library(units)
 library(kableExtra)
 library(sf)
 
@@ -47,6 +47,7 @@ ggplot() +
   geom_sf(data = shape.data) +
   geom_sf(data = shape.data %>% filter(IslandName == "Quman"), color = "#cb6527", lwd =0.8) +
   geom_sf(data = shape.data %>% filter(IslandName == "Al Ishsh Ash Sharqi"), color = "#489b7b", lwd =0.8) +
+  geom_sf(data = receiver %>% filter(otn_array == "QUMAN" | otn_array == "Al Osh Al Sharqi" )) +
   annotation_north_arrow(location = "tr", which_north = "true", 
                          pad_x = unit(0.01, "in"), pad_y = unit(0.3, "in"),
                          style = north_arrow_fancy_orienteering) +
