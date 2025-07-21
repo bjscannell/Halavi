@@ -120,7 +120,7 @@ station_counts <- dets %>% group_by(station_no) %>%
 # Load your shapefile
 shape.data <- sf::st_read("SpatialData/AlWajhIslands/AlWajhIslands.shp")
 
-# Replace "dets" with your data frame containing latitude, longitude, and transmitter_id
+
 data_sf <- st_as_sf(station_counts, coords = c("deploy_long", "deploy_lat"), crs = 4326)
 
 # Transform to UTM

@@ -131,8 +131,9 @@ dets <- dets %>% ungroup() %>%
   filter(new_class != "ADULT") %>% 
   mutate(date = date(detection_timestamp_utc)) %>% 
   arrange(detection_timestamp_utc) %>% 
-  filter(otn_array != "Turtle Bay")
-
+  filter(otn_array != "Turtle Bay") %>% 
+  group_by(transmitter_id) %>%
+  filter(n_distinct(date) > 5) %>% ungroup() 
 
 # Adding time of day ------------------------------------------------------
 library(suncalc)

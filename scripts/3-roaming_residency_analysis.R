@@ -126,7 +126,7 @@ roam_overall <- ggplot(overall_metrics, aes(x = Class, y = RI)) +
 
 # residency overall
 beta_model <- brm(
-  formula = residency_min ~ TL + Sex + (1|transmitter_id),
+  formula = residency_min ~ TL + Sex + Class + (1|transmitter_id),
   data = overall_metrics,
   family = Beta(),
   chains = 4,
