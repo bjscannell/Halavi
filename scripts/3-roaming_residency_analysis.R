@@ -130,8 +130,9 @@ beta_model <- brm(
   data = overall_metrics,
   family = Beta(),
   chains = 4,
-  cores = 4,
-  iter = 5000,
+  cores = 4 ,
+  warmup = 1000,
+  iter = 10000,
   seed = 123
 )
 
