@@ -261,6 +261,8 @@ ggplot(newdata_monthly_res, aes(x = month, y = fit)) +
 #                   aes(x = month, y = monthly_res, label = length_cm))
   
 
+
+
 # roaming
 
 gam_RI <- gam(
