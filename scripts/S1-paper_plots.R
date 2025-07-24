@@ -4,6 +4,7 @@
 library(ggspatial)
 library(patchwork)
 library(units)
+library(grid)
 library(kableExtra)
 library(sf)
 

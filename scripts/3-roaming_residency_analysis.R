@@ -227,15 +227,39 @@ newdata_monthly_res <- newdata_month %>%
          lower = fit - 1.96 * se,
          upper = fit + 1.96 * se)
 
+avgs <- monthly_metrics %>% 
+  ungroup() %>% group_by(month) %>% 
+  mutate(month_avg = mean(monthly_res),
+         upper = quantile(monthly_res,0.9),
+         lower = quantile(monthly_res,0.1)) %>% 
+  distinct(month, .keep_all = T)
 
 res_gam <- ggplot(newdata_monthly_res, aes(x = month, y = fit)) +
-  #geom_swarm(data = monthly_metrics, aes(x = month, y = monthly_res), cex = 3) +
+  geom_swarm(data = monthly_metrics, 
+             aes(x = month, y = monthly_res,
+                 fill = new_class, color = new_class), cex = 3) +
+  geom_point(data = avgs, aes(x = month, y = month_avg)) +
+  # geom_point(data = avgs, aes(x = month, y = upper)) +
+  # geom_point(data = avgs, aes(x = month, y = lower)) +
+  geom_segment(data = avgs, aes(x = month, y = lower, xend = month, yend = upper)) +
   geom_line(color = "darkgreen", linewidth = 1.2) +
   geom_ribbon(aes(ymin = lower, ymax = upper), fill = "green", alpha = 0.3) +
   labs(title = "Predicted Monthly Residency",
        x = "Month", y = "Predicted Monthly Residency") +
   theme_minimal(base_size = 14)
 
+
+
+ggplot(newdata_monthly_res, aes(x = month, y = fit)) +
+  geom_swarm(data = monthly_metrics, 
+             aes(x = month, y = monthly_res, fill = new_class, color = new_class)) #+
+  # geom_point(data = monthly_metrics, 
+  #            aes(x = jitter(month), y = monthly_res, color = new_class)) 
+
+# +
+#   geom_text_repel(data = monthly_metrics %>% filter(monthly_res < 0.25 & month ==7),
+#                   aes(x = month, y = monthly_res, label = length_cm))
+  
 
 # roaming
 
