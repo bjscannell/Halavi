@@ -14,6 +14,7 @@ library(emmeans)
 library(car)
 library(mgcv)
 library(gratia)  
+library(showtext)
 
 
 # Residency Index ---------------------------------------------------------
@@ -303,3 +304,103 @@ roam_gam <- ggplot(newdata_monthRI, aes(x = month, y = fit)) +
 
 
 roam_gam | res_gam
+
+
+
+
+# ugh ---------------------------------------------------------------------
+
+# Check distribution first
+hist(overall_metrics$RI)
+
+# Fit full model
+library(betareg)
+glm1 <- betareg(RI ~ Sex * TL, data = overall_metrics)
+
+# Check for overdispersion
+dispersion <- sum(residuals(glm1, type = "pearson")^2) / df.residual(glm1)
+print(dispersion)  # If > 1.5–2 → consider alternatives
+
+
+# detection_data: transmitter_id, detection_date (Date format)
+
+library(lubridate)
+library(dplyr)
+
+wilcox.test(monthly_res ~ sex, data = monthly_metrics)
+kruskal.test(monthly_res ~ new_class, data = monthly_metrics)
+
+
+library(lme4)
+library(car)       
+library(MuMIn)    
+
+
+
+# Fit global model
+glmm_global<- gam(
+  monthly_res ~ length_cm + sex + new_class + s(month) + s(transmitter_id, bs = "re"),
+  data = monthly_metrics,
+  family = quasibinomial(link = "logit"),
+  method = "REML"
+)
+
+# Check multicollinearity
+vif(glmm_global)
+
+# Check model
+summary(glmm_global)
+
+
+# Set global options for dredge
+options(na.action = "na.fail")
+
+# Dredge generates all model combinations
+dredge_results <- dredge(glmm_global)
+
+# View top models
+head(dredge_results)
+
+# Get best model
+best_model <- get.models(dredge_results, 1)[[1]]
+summary(best_model)
+confint(best_model, method = "Wald")
+
+null_model <- lmer(monthly_res ~ 1 + (1 | transmitter_id) + (1 | year),
+                   data = monthly_metrics)
+
+anova(null_model, best_model)  # Likelihood ratio test
+
+
+# spice it up -------------------------------------------------------------
+
+# Transform to within (0, 1)
+epsilon <- 1e-3
+monthly_metrics <- monthly_metrics %>%
+  mutate(monthly_res_trans = (monthly_res * (1 - 2 * epsilon)) + epsilon)
+
+# Nonlinear effect using a spline
+brm_nonlinear <- brm(
+  formula = bf(
+    monthly_res_trans ~ s(month) + (1 | transmitter_id) + (1 | year)
+  ),
+  data = monthly_metrics,
+  family = Beta(),
+  chains = 4, cores = 4, iter = 4000,
+  seed = 123
+)
+
+summary(brm_nonlinear)
+plot(brm_nonlinear)            
+pp_check(brm_nonlinear)         # Posterior predictive checks
+conditional_effects(brm_nonlinear, "month")  # Plot smooth trend
+
+
+# -------------------------------
+# Load Packages
+# -------------------------------
+library(brms)
+library(tidyverse)
+library(lubridate)
+library(bayesplot)
+

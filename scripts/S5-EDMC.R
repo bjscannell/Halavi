@@ -15,7 +15,7 @@
 
 # Please note that this method is likely to be slow for large datasets and could be made more efficient with compiled code
 
-sharkov<-function(data, return.matrix=TRUE, niter=10000) {
+sharkov<-function(data, return.matrix=T, niter=10000) {
   
   # Create regular hourly time sequence and add states (state 0 = unknown (i.e. no detection))
   makeseq<-function(d) {
@@ -68,3 +68,31 @@ sharkov<-function(data, return.matrix=TRUE, niter=10000) {
   }
 }
 
+
+
+df <- dets %>% 
+  filter(otn_array == "QUMAN") %>% 
+  dplyr::select(transmitter_id,detection_timestamp_utc, station_no) %>% 
+  mutate(station_agg = if_else(station_no %in% c("Qu3", "Qu2", "Qu1", "Qu13"), 'North', station_no)) %>% 
+  dplyr::rename(id = transmitter_id,
+                time = detection_timestamp_utc,
+                state = station_agg) %>% 
+  select(-station_no)
+
+
+df <- df %>%
+  mutate(
+    half_hour = floor_date(time, unit = "30 minutes")  # bin into 30-min intervals
+  ) %>%
+  group_by(id, half_hour, state) %>%
+  dplyr::count(state) %>%
+  slice_max(order_by = n, n = 1, with_ties = FALSE) %>%  # pick most frequent state
+  ungroup() %>% 
+  select(-n) %>% 
+  dplyr::rename(time = half_hour)
+
+
+
+all_matrix <- sharkov(df, return.matrix=T) 
+
+all_eig <- sharkov(df, return.matrix=F) 

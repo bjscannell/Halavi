@@ -43,33 +43,30 @@ draw(gam_mon_res, select = c(1, 2))  # Only draw smooth terms, skip random effec
 
 new_temp <- data.frame(
   temp = seq(min(df$temp, na.rm = TRUE), max(df$temp, na.rm = TRUE), length.out = 100),
-  month = median(df$month, na.rm = TRUE),
+  #month = median(df$month, na.rm = TRUE),
   length_cm = median(df$length_cm, na.rm = TRUE),
   sex = "M",
   new_class = "JUV",
   transmitter_id = "A69-1605-58"  # exclude RE for population-level effect
 )
 
-new_temp <- predict(gam_mon_res, newdata = new_temp, type = "response", se.fit = TRUE)
+new_temp_fit <- predict(gam_mon_res, newdata = new_temp, type = "response", se.fit = TRUE)
 
 
-newdata_temp_res <- new_temp %>%
-  mutate(fit = pred_monthly_res$fit,
-         se = pred_monthly_res$se.fit,
-         lower = fit - 1.96 * se,
-         upper = fit + 1.96 * se)
+pred <- predict.gam(gam_mon_res,new_temp, type = "response", se.fit = TRUE)
 
 
-ggplot(new_temp, aes(x = temp, y = pred)) +
+newdata_temp_res <- data.frame(pred) %>%
+  mutate(lower = fit - 1.96 * se.fit,
+         upper = fit + 1.96 * se.fit,
+         temp = new_temp$temp)
+
+
+ggplot(newdata_temp_res, aes(x = temp, y = fit)) +
   geom_line() +
   labs(title = "Predicted Residency vs Temperature",
        x = "Temperature",
        y = "Predicted Probability of Residency")
-
-
-
-
-
 
 
 
