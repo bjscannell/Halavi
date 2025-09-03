@@ -85,7 +85,7 @@ monthly_roam <- dets %>%
 
 # Join Metrics ----------------------------------------------------
 
-monthly_metrics <-left_join(monthly_res, monthly_roam, by = c("transmitter_id", "month"))
+monthly_metrics <-left_join(monthly_res, monthly_roam, by = c("transmitter_id", "month")) 
 
 overall_metrics <- left_join(roam, resid, by = c("transmitter_id")) %>% 
   mutate(Sex = as.factor(Sex),
@@ -95,114 +95,116 @@ overall_metrics <- left_join(roam, resid, by = c("transmitter_id")) %>%
 
 # Do overall metrics differ by sex or class? --------------------------------------
 
-showtext_auto()
-
-# residency
-res_overall <- ggplot(overall_metrics, aes(x = Class, y = residency_min)) +
-  geom_half_point(aes(color = Sex), 
-                  transformation = position_quasirandom(width = 0.1),
-                  side = "l", size = 0.5, alpha = 0.5) +
-  geom_half_boxplot(aes(fill = Sex), side = "r") + 
-  scale_y_continuous(labels = label_percent()) +
-  scale_fill_viridis_d(option = "plasma", end = 0.8) +
-  scale_color_viridis_d(option = "plasma", end = 0.8) +
-  guides(color = "none", fill = "none") +
-  labs(x = "Age Class", y = "Residency Index") +
-  theme_minimal()
-
-# roaming
-showtext_auto()
-
-roam_overall <- ggplot(overall_metrics, aes(x = Class, y = RI)) +
-  geom_half_point(aes(color = Sex), 
-                  transformation = position_quasirandom(width = 0.1),
-                  side = "l", size = 0.5, alpha = 0.5) +
-  geom_half_boxplot(aes(fill = Sex), side = "r") + 
-  scale_y_continuous(labels = label_percent()) +
-  scale_fill_viridis_d(option = "plasma", end = 0.8) +
-  scale_color_viridis_d(option = "plasma", end = 0.8) +
-  guides(color = "none", fill = "none") +
-  labs(x = "Age Class", y = "Roam Index") +
-  theme_minimal()
-
-#' some stats that say that there is no difference in sex but there 
-#' is a difference between age classes
+#' showtext_auto()
+#' 
+#' # residency
+#' res_overall <- ggplot(overall_metrics, aes(x = Class, y = residency_min)) +
+#'   geom_half_point(aes(color = Sex), 
+#'                   transformation = position_quasirandom(width = 0.1),
+#'                   side = "l", size = 0.5, alpha = 0.5) +
+#'   geom_half_boxplot(aes(fill = Sex), side = "r") + 
+#'   scale_y_continuous(labels = label_percent()) +
+#'   scale_fill_viridis_d(option = "plasma", end = 0.8) +
+#'   scale_color_viridis_d(option = "plasma", end = 0.8) +
+#'   guides(color = "none", fill = "none") +
+#'   labs(x = "Age Class", y = "Residency Index") +
+#'   theme_minimal()
+#' 
+#' # roaming
+#' showtext_auto()
+#' 
+#' roam_overall <- ggplot(overall_metrics, aes(x = Class, y = RI)) +
+#'   geom_half_point(aes(color = Sex), 
+#'                   transformation = position_quasirandom(width = 0.1),
+#'                   side = "l", size = 0.5, alpha = 0.5) +
+#'   geom_half_boxplot(aes(fill = Sex), side = "r") + 
+#'   scale_y_continuous(labels = label_percent()) +
+#'   scale_fill_viridis_d(option = "plasma", end = 0.8) +
+#'   scale_color_viridis_d(option = "plasma", end = 0.8) +
+#'   guides(color = "none", fill = "none") +
+#'   labs(x = "Age Class", y = "Roam Index") +
+#'   theme_minimal()
+#' 
+#' #' some stats that say that there is no difference in sex but there 
+#' #' is a difference between age classes
 
 
 
 
 # Overall Models ------------------------------------------------------------------
 
-overall_metrics <- overall_metrics |>
-  dplyr::mutate(
-    TL_s = as.numeric(scale(TL)),          # scale
-    SexM = ifelse(Sex == "M", 1, 0),   
-    ClassYOY = ifelse(Class == "YOY", 1, 0)
-  )
+# overall_metrics <- overall_metrics |>
+#   dplyr::mutate(
+#     TL_s = as.numeric(scale(TL)),          # scale
+#     SexM = ifelse(Sex == "M", 1, 0),   
+#     ClassYOY = ifelse(Class == "YOY", 1, 0)
+#   )
+# 
+# # residency overall
+# beta_model <- brm(
+#   formula = residency_min ~ TL + Sex + Class + (1|transmitter_id),
+#   data = overall_metrics,
+#   family = Beta(),
+#   chains = 4,
+#   cores = 4 ,
+#   warmup = 5000,
+#   iter = 25000,
+#   seed = 123
+# )
+# 
+# plot(beta_model)
+# pp_check(beta_model,ndraws = 100)
+# summary(beta_model)
+# 
+# 
+# pred_res <- beta_model %>% 
+#   epred_draws(newdata = expand_grid(Sex = c("M", "F"),
+#                                     transmitter_id = "A69-1605-52",
+#                                     TL = seq(25, 70, by = 5)))
+# 
+# ggplot(pred_res, aes(x = TL, y = .epred, color = Sex)) +
+#   geom_point(data = overall_metrics, aes(x = TL, y = residency_min)) +
+#   stat_lineribbon(alpha = 0.3, .width = 0.95, fill = "gray65") +
+#   scale_fill_brewer(palette = "Greys")  +
+#   coord_cartesian(xlim = c(34,70)) +
+#   labs(x = "TL", y = "Predicted Residency Index",
+#        fill = "Credible interval") +
+#   theme_bw() +
+#   theme(legend.position = "bottom")
+# 
+# 
+# 
+# # roaming overall
+# brms_fit <- brm(RI ~ 0 + Intercept + TL + Sex , data=overall_metrics,
+#                 family=ord_beta_reg,
+#                 cores=4,chains=4,
+#                 prior = priors,
+#                 refresh=0,
+#                 iter = 5000,
+#                 backend="cmdstanr",
+#                 stanvars=stanvars)
+# 
+# summary(brms_fit)
+# plot(brms_fit)
+# pp_check(brms_fit, ndraws = 100)
+# 
+# pred_RI <- brms_fit %>% 
+#   epred_draws(newdata = expand_grid(TL = seq(25, 85, by = 5),
+#                                     #transmitter_id = "A69-1605-52",
+#                                     Sex = c("M", "F")))
+# 
+# ggplot(pred_RI, aes(x = TL, y = .epred, color = Sex)) +
+#   #geom_point(data = overall_metrics, aes(x = Class, y = RI)) +
+#   stat_lineribbon(alpha = 0.5, .width = .8) +
+#   scale_fill_brewer(palette = "Greys")  +
+#   #coord_cartesian(xlim = c(34,85)) +
+#   labs(x = "TL", y = "Predicted Roaming Index",
+#        fill = "Credible interval") +
+#   theme_minimal() +
+#   theme(legend.position = "bottom")
 
-# residency overall
-beta_model <- brm(
-  formula = residency_min ~ TL + Sex + Class + (1|transmitter_id),
-  data = overall_metrics,
-  family = Beta(),
-  chains = 4,
-  cores = 4 ,
-  warmup = 5000,
-  iter = 25000,
-  seed = 123
-)
 
-plot(beta_model)
-pp_check(beta_model,ndraws = 100)
-summary(beta_model)
-
-
-pred_res <- beta_model %>% 
-  epred_draws(newdata = expand_grid(Sex = c("M", "F"),
-                                    transmitter_id = "A69-1605-52",
-                                    TL = seq(25, 70, by = 5)))
-
-ggplot(pred_res, aes(x = TL, y = .epred, color = Sex)) +
-  geom_point(data = overall_metrics, aes(x = TL, y = residency_min)) +
-  stat_lineribbon(alpha = 0.3, .width = 0.95, fill = "gray65") +
-  scale_fill_brewer(palette = "Greys")  +
-  coord_cartesian(xlim = c(34,70)) +
-  labs(x = "TL", y = "Predicted Residency Index",
-       fill = "Credible interval") +
-  theme_bw() +
-  theme(legend.position = "bottom")
-
-
-
-# roaming overall
-brms_fit <- brm(RI ~ 0 + Intercept + TL + Sex , data=overall_metrics,
-                family=ord_beta_reg,
-                cores=4,chains=4,
-                prior = priors,
-                refresh=0,
-                iter = 5000,
-                backend="cmdstanr",
-                stanvars=stanvars)
-
-summary(brms_fit)
-plot(brms_fit)
-pp_check(brms_fit, ndraws = 100)
-
-pred_RI <- brms_fit %>% 
-  epred_draws(newdata = expand_grid(TL = seq(25, 85, by = 5),
-                                    #transmitter_id = "A69-1605-52",
-                                    Sex = c("M", "F")))
-
-ggplot(pred_RI, aes(x = TL, y = .epred, color = Sex)) +
-  #geom_point(data = overall_metrics, aes(x = Class, y = RI)) +
-  stat_lineribbon(alpha = 0.5, .width = .8) +
-  scale_fill_brewer(palette = "Greys")  +
-  #coord_cartesian(xlim = c(34,85)) +
-  labs(x = "TL", y = "Predicted Roaming Index",
-       fill = "Credible interval") +
-  theme_minimal() +
-  theme(legend.position = "bottom")
-
+# I think everything needed is below here ---------------------------------
 
 # Monthly models ----------------------------------------------------------
 
@@ -230,7 +232,7 @@ draw(gam_mon_res, select = c(1, 2))  # Only draw smooth terms, skip random effec
 
 newdata_month <- data.frame(
   length_cm = mean(monthly_metrics$length_cm, na.rm = TRUE),
-  month = seq(1, 12, by = 0.1),
+  month = seq(1, 12, by = 1),
   transmitter_id = "A69-1605-58"                    
 )
 
@@ -352,24 +354,27 @@ plot(ggpredict(glmmfull_res, terms = c("TL")))
 
 # Temperature -------------------------------------------------------------
 
-temp_rec <- raw %>% filter(record_type == "TEMP") %>% select(field_2,field_7, field_8) %>% 
+temp_rec <- raw %>% filter(record_type == "TEMP") %>% select(field_2, field_7, field_8) %>% 
   mutate(datetime = ymd_hms(field_2),
          receiver = field_7,
          temp = as.numeric(field_8),
          month = month(datetime)) %>% 
   drop_na() %>% 
+  filter(datetime > ymd_hms("2022-09-03 16:01:43 EDT")) %>% ungroup() %>%
   # over the daily quantiles??
   # for now lets just do monthly averages
-  group_by(month) %>% 
-  mutate(monthly_temp = mean(temp)) %>% 
+  dplyr::group_by(month) %>% 
+  dplyr::mutate(monthly_temp = mean(temp)) %>% 
+  ungroup() %>%
   distinct(month, .keep_all = T)
 
 
-df <- monthly_metrics %>% left_join(temp_rec)
+df <- monthly_metrics %>% left_join(temp_rec) %>% 
+  mutate(month = as.numeric(month))
 
 # GAM with temp
 gam_mon_res <- gam(
-  monthly_res ~ length_cm + sex + new_class + s(temp) +s(month) + s(transmitter_id, bs = "re"),
+  monthly_res ~ length_cm + sex + new_class + s(monthly_temp) +s(month) + s(transmitter_id, bs = "re"),
   data = df,
   family = quasibinomial(link = "logit"),
   method = "REML"
@@ -381,12 +386,11 @@ concurvity(gam_mon_res, full = TRUE)
 # temperature is super correlated with month
 # equivalent of multicolinearity
 gam_mon_res <- gam(
-  monthly_res ~ length_cm + sex + new_class + s(temp)+ s(transmitter_id, bs = "re"),
+  monthly_res ~ length_cm + sex + new_class + s(temp, bs = "cc")+ s(transmitter_id, bs = "re"),
   data = df,
   family = quasibinomial(link = "logit"),
   method = "REML"
 )
-
 
 
 summary(gam_mon_res)
@@ -443,13 +447,6 @@ avgs <- monthly_metrics %>%
   distinct(month, .keep_all = T)
 
 res_gam <- ggplot(newdata_monthly_res, aes(x = month, y = fit)) +
-  geom_swarm(data = monthly_metrics, 
-             aes(x = month, y = monthly_res,
-                 fill = new_class, color = new_class), cex = 3) +
-  geom_point(data = avgs, aes(x = month, y = month_avg)) +
-  # geom_point(data = avgs, aes(x = month, y = upper)) +
-  # geom_point(data = avgs, aes(x = month, y = lower)) +
-  geom_segment(data = avgs, aes(x = month, y = lower, xend = month, yend = upper)) +
   geom_line(color = "darkgreen", linewidth = 1.2) +
   geom_ribbon(aes(ymin = lower, ymax = upper), fill = "green", alpha = 0.3) +
   labs(title = "Predicted Monthly Residency",
@@ -457,4 +454,14 @@ res_gam <- ggplot(newdata_monthly_res, aes(x = month, y = fit)) +
   theme_minimal(base_size = 14)
 
 
+
+ggplot(newdata_monthly_res, aes(x = month, y = fit)) +
+  geom_line(color = "darkgreen", linewidth = 1.2) +
+  geom_ribbon(aes(ymin = lower, ymax = upper), fill = "green", alpha = 0.3) +
+  labs(title = "Predicted Monthly Residency",
+       x = "Month", y = "Predicted Monthly Residency") +
+  theme_minimal(base_size = 14) 
+
+ggplot(temp_rec, aes(x = month, y = monthly_temp)) + geom_point()
+  
 

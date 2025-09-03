@@ -68,7 +68,18 @@ sharkov<-function(data, return.matrix=T, niter=10000) {
   }
 }
 
+# set up receivers locations 
+stations <- HalaviArray %>% filter(otn_array == "QUMAN") %>%
+  distinct(station_no, .keep_all = T)  %>% select(station_no, deploy_lat, deploy_long)
 
+stations$station_no[stations$station_no == "Qu3"] <- "North"
+
+rownames(stations) <- stations$station_no
+
+# Quman shapefile
+na_quman_wgs <- st_transform(shape.data %>% filter(IslandName == "Quman"), crs = 4326)
+
+# season function
 getSeason <- function(input.date){
   numeric.date <- 100*month(input.date)+day(input.date)
   ## input Seasons upper limits in the form MMDD in the "break =" option:
@@ -79,7 +90,7 @@ getSeason <- function(input.date){
 }
 
 
-# Run the function  -------------------------------------------------------
+# EDMC function  -------------------------------------------------------
 
 calculate_edmc <- function(col_name, value) {
   df <- dets %>% 
@@ -120,6 +131,56 @@ calculate_edmc <- function(col_name, value) {
 }
 
 
+# EDMC plot function ---------------------------------------------------------------
+
+edmc_plot <- function(edmc_df) {
+  # change depending on what you want to look at
+  matrix_values <- edmc_df[[1]]
+  eig <- edmc_df[[2]]
+  
+  tdg <- tibble::rownames_to_column(data.frame(matrix_values), "to") %>%
+    pivot_longer(
+      cols = !starts_with("to"),
+      names_to = "from",
+      values_to = "score"
+    )  %>% left_join(stations, by = c("to" = "station_no")) %>% 
+    left_join(stations, by = c("from" = "station_no")) %>% 
+    left_join(eig, by = c("to" = "station"))
+  
+
+  
+  ggplot() +
+    geom_sf(data = na_quman_wgs) +
+    geom_curve(data = tdg %>%
+                 filter(from != to) %>%
+                 filter(score > 0.05),
+               aes(x = deploy_long.x, y = deploy_lat.x,
+                   xend = deploy_long.y, yend = deploy_lat.y,
+                   alpha = ifelse(score == 0, 0, 1),
+                   colour = score, linewidth = score),
+               arrow = arrow(length = unit(0.2, "cm"), type = "closed"),
+               curvature = 0.2) +
+    geom_point(data = tdg %>%
+                 filter(from == to),
+               aes(deploy_long.x, deploy_lat.x,
+                   color = score),
+               alpha = 0.75, size = 10) +
+    geom_point(data = tdg %>% 
+                 filter(from == to), 
+               aes(deploy_long.x, deploy_lat.x, size = V1),
+               alpha = 1, shape = 23, fill = "black") +
+    scale_alpha_identity() +
+    scale_fill_continuous(type = "viridis") +
+    scale_color_continuous(type = "viridis") +
+    scale_size_continuous(range = c(1, 5)) +
+    scale_linewidth(range = c(1,2)) +
+    labs(color = "Transition Probability", size = "Probability") +
+    theme_void()
+  
+  
+}
+
+
 
 # overall -----------------------------------------------------------------
 
@@ -141,92 +202,12 @@ edmc_spring <- calculate_edmc(col_name = season, value = "Spring")
 edmc_summer <- calculate_edmc(col_name = season, value = "Summer")
 edmc_fall <- calculate_edmc(col_name = season, value = "Fall")
 edmc_winter <- calculate_edmc(col_name = season, value = "Winter")
+
 # plots -------------------------------------------------------------------
+edmc_plot(edmc_juv)
+edmc_plot(edmc_yoy)
 
-# set up receivers locations 
-stations <- HalaviArray %>% filter(otn_array == "QUMAN") %>%
-  distinct(station_no, .keep_all = T)  %>% select(station_no, deploy_lat, deploy_long)
-
-stations$station_no[stations$station_no == "Qu3"] <- "North"
-
-rownames(stations) <- stations$station_no
+edmc_plot(edmc_winter)
+edmc_plot(edmc_summer)
 
 
-tdg <- tibble::rownames_to_column(data.frame(matrix_values), "to") %>%
-  pivot_longer(
-    cols = !starts_with("to"),
-    names_to = "from",
-    values_to = "score"
-  )  %>% left_join(stations, by = c("to" = "station_no")) %>% 
-  left_join(stations, by = c("from" = "station_no")) %>% 
-  left_join(eig, by = c("to" = "station"))
-
-
-na_quman_wgs <- st_transform(shape.data %>% filter(IslandName == "Quman"), crs = 4326)
-
-ggplot() +
-  geom_sf(data = na_quman_wgs) +
-  # geom_curve(data = tdg %>%
-  #              filter(from != to) %>%
-  #              filter(score > 0.05),
-  #            aes(x = deploy_long.x, y = deploy_lat.x,
-  #                xend = deploy_long.y, yend = deploy_lat.y,
-  #                alpha = ifelse(score == 0, 0, 1),
-  #                colour = score, linewidth = score),
-  #            arrow = arrow(length = unit(0.2, "cm"), type = "closed"),
-  #            curvature = 0.2) +
-  # geom_point(data = tdg %>% 
-  #              filter(from == to), 
-  #            aes(deploy_long.x, deploy_lat.x, 
-  #                color = score),
-  #            alpha = 0.75, size = 10) +
-  geom_point(data = tdg %>% 
-               filter(from == to), 
-             aes(deploy_long.x, deploy_lat.x, size = V1),
-             alpha = 1, shape = 23, fill = "black") +
-  scale_alpha_identity() +
-  scale_fill_continuous(type = "viridis") +
-  scale_color_continuous(type = "viridis") +
-  scale_size_continuous(range = c(1, 5)) +
-  scale_linewidth(range = c(1,2)) +
-  labs(color = "Transition Probability", size = "Degree") +
-  theme_void()
-  
-
-
-
-ggplot() +
-  geom_sf(data = na_quman_wgs) +
-  geom_point(data = tdg %>% 
-               filter(from == to), 
-             aes(deploy_long.x, deploy_lat.x, size = V1),
-             alpha = 1, shape = 23, fill = "black") +
-  theme_void()
-
-ggplot() +
-  geom_sf(data = na_quman_wgs, fill = "transparent") + theme_void()
-
-ggsave("/Users/brittneyscannell/Desktop/quamn_rex.png", height = 10, width = 6)
-
-
-
-ggplot() +
-  geom_sf(data = na_quman_wgs) +
-  geom_curve(data = tdg %>%
-               filter(from != to) %>%
-               filter(score > 0.05),
-             aes(x = deploy_long.x, y = deploy_lat.x,
-                 xend = deploy_long.y, yend = deploy_lat.y,
-                 alpha = ifelse(score == 0, 0, 1),
-                 colour = score),
-             arrow = arrow(length = unit(0.2, "cm"), type = "closed"),
-             curvature = 0.2) 
-  
-
-ggplot(dets %>% filter(otn_array == "QUMAN")) +
-  geom_point(aes(x=detection_timestamp_utc, y = transmitter_id, color = station_no))
-
-
-
-ggplot(df) +
-  geom_point(aes(x=time, y = id, color = state))
