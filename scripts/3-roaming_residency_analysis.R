@@ -6,6 +6,13 @@ library(patchwork)
 library(brms)
 library(tidybayes)
 library(tidyr)
+library(betareg)
+library(glmmTMB)
+library(ggeffects)
+library(DHARMa)
+library(lme4)
+library(car)       
+library(MuMIn)    
 library(tidyverse)
 library(ggplot2)
 library(broom)
@@ -15,6 +22,7 @@ library(car)
 library(mgcv)
 library(gratia)  
 library(showtext)
+
 
 
 # Residency Index ---------------------------------------------------------
@@ -114,7 +122,7 @@ roam_overall <- ggplot(overall_metrics, aes(x = Class, y = RI)) +
   scale_fill_viridis_d(option = "plasma", end = 0.8) +
   scale_color_viridis_d(option = "plasma", end = 0.8) +
   guides(color = "none", fill = "none") +
-  labs(x = "Age Class", y = "Residency Index") +
+  labs(x = "Age Class", y = "Roam Index") +
   theme_minimal()
 
 #' some stats that say that there is no difference in sex but there 
@@ -125,6 +133,13 @@ roam_overall <- ggplot(overall_metrics, aes(x = Class, y = RI)) +
 
 # Overall Models ------------------------------------------------------------------
 
+overall_metrics <- overall_metrics |>
+  dplyr::mutate(
+    TL_s = as.numeric(scale(TL)),          # scale
+    SexM = ifelse(Sex == "M", 1, 0),   
+    ClassYOY = ifelse(Class == "YOY", 1, 0)
+  )
+
 # residency overall
 beta_model <- brm(
   formula = residency_min ~ TL + Sex + Class + (1|transmitter_id),
@@ -132,8 +147,8 @@ beta_model <- brm(
   family = Beta(),
   chains = 4,
   cores = 4 ,
-  warmup = 1000,
-  iter = 10000,
+  warmup = 5000,
+  iter = 25000,
   seed = 123
 )
 
@@ -236,9 +251,9 @@ avgs <- monthly_metrics %>%
   distinct(month, .keep_all = T)
 
 res_gam <- ggplot(newdata_monthly_res, aes(x = month, y = fit)) +
-  geom_swarm(data = monthly_metrics, 
-             aes(x = month, y = monthly_res,
-                 fill = new_class, color = new_class), cex = 3) +
+  # geom_swarm(data = monthly_metrics, 
+  #            aes(x = month, y = monthly_res,
+  #                fill = new_class, color = new_class), cex = 3) +
   geom_point(data = avgs, aes(x = month, y = month_avg)) +
   # geom_point(data = avgs, aes(x = month, y = upper)) +
   # geom_point(data = avgs, aes(x = month, y = lower)) +
@@ -311,96 +326,135 @@ roam_gam | res_gam
 # ugh ---------------------------------------------------------------------
 
 # Check distribution first
-hist(overall_metrics$RI)
+hist(overall_metrics$residency_min)
 
 # Fit full model
-library(betareg)
-glm1 <- betareg(RI ~ Sex * TL, data = overall_metrics)
 
-# Check for overdispersion
-dispersion <- sum(residuals(glm1, type = "pearson")^2) / df.residual(glm1)
-print(dispersion)  # If > 1.5–2 → consider alternatives
+glmmfull_res <- glmmTMB(residency_min ~ Sex:TL + TL + Sex + (1|transmitter_id),
+                    data = overall_metrics, family=beta_family(link="logit"))
 
-
-# detection_data: transmitter_id, detection_date (Date format)
-
-library(lubridate)
-library(dplyr)
-
-wilcox.test(monthly_res ~ sex, data = monthly_metrics)
-kruskal.test(monthly_res ~ new_class, data = monthly_metrics)
+# check the model
+simres <- simulateResiduals(fittedModel = glmmfull_res, n = 1000)
+plot(simres)
 
 
-library(lme4)
-library(car)       
-library(MuMIn)    
+testUniformity(simres)   
+testDispersion(simres)   
+testZeroInflation(simres) 
+
+# plot the model
+res_predicts <- data.frame(ggpredict(glmmfull_res, terms = c("TL")))
+
+plot(ggpredict(glmmfull_res, terms = c("TL")))
 
 
 
-# Fit global model
-glmm_global<- gam(
-  monthly_res ~ length_cm + sex + new_class + s(month) + s(transmitter_id, bs = "re"),
-  data = monthly_metrics,
+
+# Temperature -------------------------------------------------------------
+
+temp_rec <- raw %>% filter(record_type == "TEMP") %>% select(field_2,field_7, field_8) %>% 
+  mutate(datetime = ymd_hms(field_2),
+         receiver = field_7,
+         temp = as.numeric(field_8),
+         month = month(datetime)) %>% 
+  drop_na() %>% 
+  # over the daily quantiles??
+  # for now lets just do monthly averages
+  group_by(month) %>% 
+  mutate(monthly_temp = mean(temp)) %>% 
+  distinct(month, .keep_all = T)
+
+
+df <- monthly_metrics %>% left_join(temp_rec)
+
+# GAM with temp
+gam_mon_res <- gam(
+  monthly_res ~ length_cm + sex + new_class + s(temp) +s(month) + s(transmitter_id, bs = "re"),
+  data = df,
   family = quasibinomial(link = "logit"),
   method = "REML"
 )
 
-# Check multicollinearity
-vif(glmm_global)
+# we have to remove month because of "multicolinearity"
+concurvity(gam_mon_res, full = TRUE)
 
-# Check model
-summary(glmm_global)
-
-
-# Set global options for dredge
-options(na.action = "na.fail")
-
-# Dredge generates all model combinations
-dredge_results <- dredge(glmm_global)
-
-# View top models
-head(dredge_results)
-
-# Get best model
-best_model <- get.models(dredge_results, 1)[[1]]
-summary(best_model)
-confint(best_model, method = "Wald")
-
-null_model <- lmer(monthly_res ~ 1 + (1 | transmitter_id) + (1 | year),
-                   data = monthly_metrics)
-
-anova(null_model, best_model)  # Likelihood ratio test
-
-
-# spice it up -------------------------------------------------------------
-
-# Transform to within (0, 1)
-epsilon <- 1e-3
-monthly_metrics <- monthly_metrics %>%
-  mutate(monthly_res_trans = (monthly_res * (1 - 2 * epsilon)) + epsilon)
-
-# Nonlinear effect using a spline
-brm_nonlinear <- brm(
-  formula = bf(
-    monthly_res_trans ~ s(month) + (1 | transmitter_id) + (1 | year)
-  ),
-  data = monthly_metrics,
-  family = Beta(),
-  chains = 4, cores = 4, iter = 4000,
-  seed = 123
+# temperature is super correlated with month
+# equivalent of multicolinearity
+gam_mon_res <- gam(
+  monthly_res ~ length_cm + sex + new_class + s(temp)+ s(transmitter_id, bs = "re"),
+  data = df,
+  family = quasibinomial(link = "logit"),
+  method = "REML"
 )
 
-summary(brm_nonlinear)
-plot(brm_nonlinear)            
-pp_check(brm_nonlinear)         # Posterior predictive checks
-conditional_effects(brm_nonlinear, "month")  # Plot smooth trend
 
 
-# -------------------------------
-# Load Packages
-# -------------------------------
-library(brms)
-library(tidyverse)
-library(lubridate)
-library(bayesplot)
+summary(gam_mon_res)
+appraise(gam_mon_res)
+draw(gam_mon_res, select = c(1, 2))  # Only draw smooth terms, skip random effects
+
+
+
+new_temp <- data.frame(
+  temp = seq(min(df$temp, na.rm = TRUE), max(df$temp, na.rm = TRUE), length.out = 100),
+  #month = median(df$month, na.rm = TRUE),
+  length_cm = median(df$length_cm, na.rm = TRUE),
+  sex = "M",
+  new_class = "JUV",
+  transmitter_id = "A69-1605-58"  # exclude RE for population-level effect
+)
+
+new_temp_fit <- predict(gam_mon_res, newdata = new_temp, type = "response", se.fit = TRUE)
+
+
+pred <- predict.gam(gam_mon_res,new_temp, type = "response", se.fit = TRUE)
+
+
+newdata_temp_res <- data.frame(pred) %>%
+  mutate(lower = fit - 1.96 * se.fit,
+         upper = fit + 1.96 * se.fit,
+         temp = new_temp$temp)
+
+
+ggplot(newdata_temp_res, aes(x = temp, y = fit)) +
+  geom_line() +
+  labs(title = "Predicted Residency vs Temperature",
+       x = "Temperature",
+       y = "Predicted Probability of Residency")
+
+
+
+
+
+
+pred_monthly_res <- predict(gam4_qb, newdata = newdata_month, se.fit = TRUE, type = "response")
+
+newdata_monthly_res <- newdata_month %>%
+  mutate(fit = pred_monthly_res$fit,
+         se = pred_monthly_res$se.fit,
+         lower = fit - 1.96 * se,
+         upper = fit + 1.96 * se)
+
+avgs <- monthly_metrics %>% 
+  ungroup() %>% group_by(month) %>% 
+  mutate(month_avg = mean(monthly_res),
+         upper = quantile(monthly_res,0.9),
+         lower = quantile(monthly_res,0.1)) %>% 
+  distinct(month, .keep_all = T)
+
+res_gam <- ggplot(newdata_monthly_res, aes(x = month, y = fit)) +
+  geom_swarm(data = monthly_metrics, 
+             aes(x = month, y = monthly_res,
+                 fill = new_class, color = new_class), cex = 3) +
+  geom_point(data = avgs, aes(x = month, y = month_avg)) +
+  # geom_point(data = avgs, aes(x = month, y = upper)) +
+  # geom_point(data = avgs, aes(x = month, y = lower)) +
+  geom_segment(data = avgs, aes(x = month, y = lower, xend = month, yend = upper)) +
+  geom_line(color = "darkgreen", linewidth = 1.2) +
+  geom_ribbon(aes(ymin = lower, ymax = upper), fill = "green", alpha = 0.3) +
+  labs(title = "Predicted Monthly Residency",
+       x = "Month", y = "Predicted Monthly Residency") +
+  theme_minimal(base_size = 14)
+
+
 

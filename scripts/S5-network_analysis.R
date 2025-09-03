@@ -17,7 +17,7 @@ dets_n <- dets %>%
 edge_list <- dets_n %>%
   filter(!is.na(next_station)) %>%
   select(transmitter_id, station_no, next_station, sex, life_stage) %>%
-  rename(from = station_no, to = next_station)
+  dplyr::rename(from = station_no, to = next_station)
 
 library(tidygraph)
 library(ggraph)

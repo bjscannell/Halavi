@@ -21,7 +21,7 @@ HalaviTaggingMetadata <- read_csv("data/tags/HalaviTaggingMetadata.csv",
          end_date = tag_activation_date+est_tag_life) %>% 
   mutate(new_class = case_when(
     length_cm < 40 ~ "YOY",
-    length_cm >= 80 ~ "ADULT",
+    length_cm >= 70 ~ "ADULT",
     .default = "JUV"
   )) 
 
