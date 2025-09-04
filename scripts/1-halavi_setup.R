@@ -127,13 +127,13 @@ dets <- dets %>% ungroup() %>%
     .default = station_no
   )) %>% 
   filter(transmitter_id %in% HalaviTaggingMetadata$transmitter_id) %>% 
-  filter(year(utc_release_date_time) < year("2025-05-27 08:27:38")) %>% 
+  filter(year(utc_release_date_time) < year("2025-05-01 08:27:38")) %>% 
   filter(new_class != "ADULT") %>% 
   mutate(date = date(detection_timestamp_utc)) %>% 
   arrange(detection_timestamp_utc) %>% 
   filter(otn_array != "Turtle Bay") %>% 
   group_by(transmitter_id) %>%
-  filter(n_distinct(date) > 5) %>% ungroup() 
+  filter(n_distinct(date) > 2) %>% ungroup() 
 
 # Adding time of day ------------------------------------------------------
 library(suncalc)

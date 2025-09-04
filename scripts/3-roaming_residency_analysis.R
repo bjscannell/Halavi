@@ -391,7 +391,7 @@ concurvity(gam_mon_res, full = TRUE)
 
 # temperature is super correlated with month
 # equivalent of multicolinearity
-gam_mon_res <- gam(
+gam_temp_res <- gam(
   monthly_res ~ length_cm + sex + new_class + s(temp)+ s(transmitter_id, bs = "re"),
   data = df,
   family = quasibinomial(link = "logit"),
@@ -399,9 +399,9 @@ gam_mon_res <- gam(
 )
 
 
-summary(gam_mon_res)
-appraise(gam_mon_res)
-draw(gam_mon_res, select = c(1, 2))  # Only draw smooth terms, skip random effects
+summary(gam_temp_res)
+appraise(gam_temp_res)
+draw(gam_temp_res, select = c(1, 2))  # Only draw smooth terms, skip random effects
 
 
 

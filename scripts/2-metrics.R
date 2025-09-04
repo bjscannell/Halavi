@@ -57,15 +57,18 @@ res <- dets %>% group_by(transmitter_id) %>%
 
 
 # Tagging efforts ---------------------------------------------------------
-
+tagging_pool <- HalaviTaggingMetadata %>% 
+  filter(new_class != "ADULT") %>% 
+  filter(year != "2025") %>% 
+  filter(capture_island != "Turtle Bay")
 
 # Count -------------------------------------------------------------------
-HalaviTaggingMetadata %>% group_by(year) %>% 
+tagging_pool %>% group_by(year) %>% 
   summarise(count = n())
 
 
 # Sex Ratio ---------------------------------------------------------------
-HalaviTaggingMetadata %>% 
+tagging_pool %>% 
   group_by(year) %>% 
   count(sex)
 
@@ -77,14 +80,14 @@ HalaviTaggingMetadata %>%
 
 
 # Location ----------------------------------------------------------------
-HalaviTaggingMetadata %>% 
+tagging_pool %>% 
   group_by(year) %>% 
   count(capture_island)
 
 
 
 # Size Metrics -------------------------------------------------------------------------
-HalaviTaggingMetadata %>% 
+tagging_pool %>% 
   group_by(year) %>% 
   summarise(min_l = min(length_cm, na.rm = T),
             max_l = max(length_cm, na.rm = T),
@@ -94,7 +97,7 @@ HalaviTaggingMetadata %>%
             avg_d = mean(length2_cm, na.rm = T))
 
 
-HalaviTaggingMetadata %>% 
+tagging_pool %>% 
   count(year,tag_model) 
 
 
@@ -108,3 +111,29 @@ dets %>% distinct(transmitter_id, .keep_all = T) %>% count(sex)
 dets %>% distinct(transmitter_id, .keep_all = T) %>% count(new_class)
 
 dets %>% distinct(transmitter_id, .keep_all = T) %>% count(otn_array)
+
+
+dets %>% distinct(transmitter_id, .keep_all = T) %>% 
+  group_by(sex) %>% 
+  summarise(min_l = min(length_cm, na.rm = T),
+            max_l = max(length_cm, na.rm = T),
+            avg_l = mean(length_cm, na.rm = T),
+            sd_l = sd(length_cm, na.rm = T)) %>% View()
+  
+res %>% summarise(
+  residency_max_mean = mean(residency_max),
+  residency_max_sd = sd(residency_max),
+  res_ax_min = min(residency_max),
+  res_ax_max = max(residency_max),
+  residency_min_mean = mean(residency_min),
+  residency_min_sd = sd(residency_min),
+  res_min_min = min(residency_min),
+  res_min_max = max(residency_min)
+)
+
+
+res %>% summarise(
+  residency_max_mean = mean(RI),
+  residency_max_sd = sd(residency_max),
+  res_ax_min = min(residency_max),
+  res_ax_max = max(residency_max))
