@@ -353,6 +353,15 @@ testZeroInflation(simres)
 # plot the model
 res_predicts <- data.frame(ggpredict(glmmfull_res, terms = c("TL")))
 
+ggplot() +
+  geom_line(data = res_predicts, aes(x = x, y = predicted)) +
+  geom_ribbon(data = res_predicts,
+              aes(x = x, ymin = conf.low, ymax = conf.high), alpha = 0.3) +
+  geom_point(data = overall_metrics, aes(x = TL, y = residency_min)) +
+  labs(x = "Total Length (cm)",
+       y = "Residency Minimum") +
+  theme_bw() 
+
 plot(ggpredict(glmmfull_res, terms = c("TL")))
 
 
