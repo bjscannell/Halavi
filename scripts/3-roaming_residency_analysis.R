@@ -219,7 +219,7 @@ monthly_metrics <- monthly_metrics %>%
 
 # residency
 gam_mon_res <- gam(
-  monthly_res ~ length_cm + sex + new_class + s(month) + s(transmitter_id, bs = "re"),
+  monthly_res ~ length_cm + sex + s(month, bs = "cc") + s(transmitter_id, bs = "re"),
   data = monthly_metrics,
   family = quasibinomial(link = "logit"),
   method = "REML"
@@ -232,12 +232,18 @@ draw(gam_mon_res, select = c(1, 2))  # Only draw smooth terms, skip random effec
 
 newdata_month <- data.frame(
   length_cm = mean(monthly_metrics$length_cm, na.rm = TRUE),
-  month = seq(1, 12, by = 1),
-  transmitter_id = "A69-1605-58"                    
+  month = seq(1, 12, by = 0.1),
+  transmitter_id = "A69-1605-58",
+  sex = c("F")
 )
 
+# plot the model
+res_predicts <- data.frame(ggpredict(gam_mon_res, terms = c("month")))
 
-pred_monthly_res <- predict(gam4_qb, newdata = newdata_month, se.fit = TRUE, type = "response")
+plot(ggpredict(gam_mon_res, terms = c("month")))
+
+
+pred_monthly_res <- predict(gam_mon_res, newdata = newdata_month, se.fit = TRUE, type = "response")
 
 newdata_monthly_res <- newdata_month %>%
   mutate(fit = pred_monthly_res$fit,
@@ -256,10 +262,10 @@ res_gam <- ggplot(newdata_monthly_res, aes(x = month, y = fit)) +
   # geom_swarm(data = monthly_metrics, 
   #            aes(x = month, y = monthly_res,
   #                fill = new_class, color = new_class), cex = 3) +
-  geom_point(data = avgs, aes(x = month, y = month_avg)) +
+  #geom_point(data = avgs, aes(x = month, y = month_avg)) +
   # geom_point(data = avgs, aes(x = month, y = upper)) +
   # geom_point(data = avgs, aes(x = month, y = lower)) +
-  geom_segment(data = avgs, aes(x = month, y = lower, xend = month, yend = upper)) +
+  #geom_segment(data = avgs, aes(x = month, y = lower, xend = month, yend = upper)) +
   geom_line(color = "darkgreen", linewidth = 1.2) +
   geom_ribbon(aes(ymin = lower, ymax = upper), fill = "green", alpha = 0.3) +
   labs(title = "Predicted Monthly Residency",
@@ -267,10 +273,10 @@ res_gam <- ggplot(newdata_monthly_res, aes(x = month, y = fit)) +
   theme_minimal(base_size = 14)
 
 
-
-ggplot(newdata_monthly_res, aes(x = month, y = fit)) +
-  geom_swarm(data = monthly_metrics, 
-             aes(x = month, y = monthly_res, fill = new_class, color = new_class)) #+
+# 
+# ggplot(newdata_monthly_res, aes(x = month, y = fit)) +
+#   geom_swarm(data = monthly_metrics, 
+#              aes(x = month, y = monthly_res, fill = new_class, color = new_class)) #+
   # geom_point(data = monthly_metrics, 
   #            aes(x = jitter(month), y = monthly_res, color = new_class)) 
 
@@ -282,45 +288,45 @@ ggplot(newdata_monthly_res, aes(x = month, y = fit)) +
 
 
 # roaming
+# 
+# gam_RI <- gam(
+#   RI ~ length_cm + s(month) + s(transmitter_id, bs = "re"),
+#   data = monthly_metrics,
+#   family = quasibinomial(link = "logit"),
+#   method = "REML"
+# )
+# 
+# summary(gam_RI)
+# appraise(gam_RI)
+# draw(gam_RI, select = c(1, 2))  # Only draw smooth terms, skip random effects
+# 
+# 
+# newdata_month <- data.frame(
+#   length_cm = mean(monthly_metrics$length_cm, na.rm = TRUE),
+#   month = seq(1, 12, by = 0.1),
+#   transmitter_id = "A69-1605-52"                     # ignore random effect
+# )
+# 
+# 
+# pred_monthRI <- predict(gam_RI, newdata = newdata_month, se.fit = TRUE, type = "response")
+# 
+# newdata_monthRI <- newdata_month %>%
+#   mutate(fit = pred_monthRI$fit,
+#          se = pred_monthRI$se.fit,
+#          lower = fit - 1.96 * se,
+#          upper = fit + 1.96 * se)
+# 
+# 
+# roam_gam <- ggplot(newdata_monthRI, aes(x = month, y = fit)) +
+#   geom_line(color = "darkgreen", linewidth = 1.2) +
+#   geom_ribbon(aes(ymin = lower, ymax = upper), fill = "green", alpha = 0.3) +
+#   labs(title = "Predicted Roaming Index by Month",
+#        x = "Month", y = "Predicted Monthly Roaming Index") +
+#   theme_minimal(base_size = 14)
 
-gam_RI <- gam(
-  RI ~ length_cm + s(month) + s(transmitter_id, bs = "re"),
-  data = monthly_metrics,
-  family = quasibinomial(link = "logit"),
-  method = "REML"
-)
-
-summary(gam_RI)
-appraise(gam_RI)
-draw(gam_RI, select = c(1, 2))  # Only draw smooth terms, skip random effects
 
 
-newdata_month <- data.frame(
-  length_cm = mean(monthly_metrics$length_cm, na.rm = TRUE),
-  month = seq(1, 12, by = 0.1),
-  transmitter_id = "A69-1605-52"                     # ignore random effect
-)
-
-
-pred_monthRI <- predict(gam_RI, newdata = newdata_month, se.fit = TRUE, type = "response")
-
-newdata_monthRI <- newdata_month %>%
-  mutate(fit = pred_monthRI$fit,
-         se = pred_monthRI$se.fit,
-         lower = fit - 1.96 * se,
-         upper = fit + 1.96 * se)
-
-
-roam_gam <- ggplot(newdata_monthRI, aes(x = month, y = fit)) +
-  geom_line(color = "darkgreen", linewidth = 1.2) +
-  geom_ribbon(aes(ymin = lower, ymax = upper), fill = "green", alpha = 0.3) +
-  labs(title = "Predicted Roaming Index by Month",
-       x = "Month", y = "Predicted Monthly Roaming Index") +
-  theme_minimal(base_size = 14)
-
-
-
-roam_gam | res_gam
+#roam_gam | res_gam
 
 
 
@@ -374,7 +380,7 @@ df <- monthly_metrics %>% left_join(temp_rec) %>%
 
 # GAM with temp
 gam_mon_res <- gam(
-  monthly_res ~ length_cm + sex + new_class + s(monthly_temp) +s(month) + s(transmitter_id, bs = "re"),
+  monthly_res ~ length_cm + sex  + s(monthly_temp) +s(month) + s(transmitter_id, bs = "re"),
   data = df,
   family = quasibinomial(link = "logit"),
   method = "REML"
@@ -386,7 +392,7 @@ concurvity(gam_mon_res, full = TRUE)
 # temperature is super correlated with month
 # equivalent of multicolinearity
 gam_mon_res <- gam(
-  monthly_res ~ length_cm + sex + new_class + s(temp, bs = "cc")+ s(transmitter_id, bs = "re"),
+  monthly_res ~ length_cm + sex + new_class + s(temp)+ s(transmitter_id, bs = "re"),
   data = df,
   family = quasibinomial(link = "logit"),
   method = "REML"
@@ -431,37 +437,23 @@ ggplot(newdata_temp_res, aes(x = temp, y = fit)) +
 
 
 
-pred_monthly_res <- predict(gam4_qb, newdata = newdata_month, se.fit = TRUE, type = "response")
-
-newdata_monthly_res <- newdata_month %>%
-  mutate(fit = pred_monthly_res$fit,
-         se = pred_monthly_res$se.fit,
-         lower = fit - 1.96 * se,
-         upper = fit + 1.96 * se)
-
-avgs <- monthly_metrics %>% 
-  ungroup() %>% group_by(month) %>% 
-  mutate(month_avg = mean(monthly_res),
-         upper = quantile(monthly_res,0.9),
-         lower = quantile(monthly_res,0.1)) %>% 
-  distinct(month, .keep_all = T)
-
-res_gam <- ggplot(newdata_monthly_res, aes(x = month, y = fit)) +
-  geom_line(color = "darkgreen", linewidth = 1.2) +
-  geom_ribbon(aes(ymin = lower, ymax = upper), fill = "green", alpha = 0.3) +
-  labs(title = "Predicted Monthly Residency",
-       x = "Month", y = "Predicted Monthly Residency") +
-  theme_minimal(base_size = 14)
-
-
-
 ggplot(newdata_monthly_res, aes(x = month, y = fit)) +
   geom_line(color = "darkgreen", linewidth = 1.2) +
   geom_ribbon(aes(ymin = lower, ymax = upper), fill = "green", alpha = 0.3) +
+  scale_x_continuous(breaks = seq(1,12,1)) +
   labs(title = "Predicted Monthly Residency",
        x = "Month", y = "Predicted Monthly Residency") +
   theme_minimal(base_size = 14) 
 
-ggplot(temp_rec, aes(x = month, y = monthly_temp)) + geom_point()
-  
 
+ggplot(temp_rec, aes(month, monthly_temp)) + 
+  geom_smooth(se=F) +
+  scale_y_continuous(position = "right") +
+  scale_x_continuous(breaks = seq(1,12,1)) +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    plot.background = element_rect(fill = "transparent", color = NA)
+  )
+
+ggsave("temp.png")
