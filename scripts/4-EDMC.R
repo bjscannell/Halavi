@@ -148,7 +148,6 @@ edmc_plot <- function(edmc_df) {
     left_join(eig, by = c("to" = "station"))
   
 
-  
   ggplot() +
     geom_sf(data = na_quman_wgs) +
     geom_curve(data = tdg %>%
@@ -170,11 +169,13 @@ edmc_plot <- function(edmc_df) {
                aes(deploy_long.x, deploy_lat.x, size = V1),
                alpha = 1, shape = 23, fill = "black") +
     scale_alpha_identity() +
-    scale_fill_continuous(type = "viridis") +
-    scale_color_continuous(type = "viridis") +
-    scale_size_continuous(range = c(1, 5)) +
-    scale_linewidth(range = c(1,2)) +
-    labs(color = "Transition Probability", size = "Probability") +
+    scale_fill_continuous(type = "viridis", limits = c(0,1)) +
+    scale_color_continuous(type = "viridis", limits = c(0,0.85)) +
+    scale_size_continuous(breaks=c(0, 0.01, 0.05,0.1, 0.2, 0.31),
+                          labels=c("0", "1%", "5%", "10%", "20%", "30%"),
+                          limits = c(0,0.31)) +
+    scale_linewidth(range = c(1,2), guide = "none") +
+    labs(color = "Transition Probability", size = " Residency Probability") +
     theme_void()
   
   
@@ -202,12 +203,4 @@ edmc_spring <- calculate_edmc(col_name = season, value = "Spring")
 edmc_summer <- calculate_edmc(col_name = season, value = "Summer")
 edmc_fall <- calculate_edmc(col_name = season, value = "Fall")
 edmc_winter <- calculate_edmc(col_name = season, value = "Winter")
-
-# plots -------------------------------------------------------------------
-edmc_plot(edmc_juv)
-edmc_plot(edmc_yoy)
-
-edmc_plot(edmc_winter)
-edmc_plot(edmc_summer)
-
 

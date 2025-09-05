@@ -258,20 +258,6 @@ avgs <- monthly_metrics %>%
          lower = quantile(monthly_res,0.1)) %>% 
   distinct(month, .keep_all = T)
 
-res_gam <- ggplot(newdata_monthly_res, aes(x = month, y = fit)) +
-  # geom_swarm(data = monthly_metrics, 
-  #            aes(x = month, y = monthly_res,
-  #                fill = new_class, color = new_class), cex = 3) +
-  #geom_point(data = avgs, aes(x = month, y = month_avg)) +
-  # geom_point(data = avgs, aes(x = month, y = upper)) +
-  # geom_point(data = avgs, aes(x = month, y = lower)) +
-  #geom_segment(data = avgs, aes(x = month, y = lower, xend = month, yend = upper)) +
-  geom_line(color = "darkgreen", linewidth = 1.2) +
-  geom_ribbon(aes(ymin = lower, ymax = upper), fill = "green", alpha = 0.3) +
-  labs(title = "Predicted Monthly Residency",
-       x = "Month", y = "Predicted Monthly Residency") +
-  theme_minimal(base_size = 14)
-
 
 # 
 # ggplot(newdata_monthly_res, aes(x = month, y = fit)) +
@@ -353,15 +339,6 @@ testZeroInflation(simres)
 # plot the model
 res_predicts <- data.frame(ggpredict(glmmfull_res, terms = c("TL")))
 
-ggplot() +
-  geom_line(data = res_predicts, aes(x = x, y = predicted)) +
-  geom_ribbon(data = res_predicts,
-              aes(x = x, ymin = conf.low, ymax = conf.high), alpha = 0.3) +
-  geom_point(data = overall_metrics, aes(x = TL, y = residency_min)) +
-  labs(x = "Total Length (cm)",
-       y = "Residency Minimum") +
-  theme_bw() 
-
 plot(ggpredict(glmmfull_res, terms = c("TL")))
 
 
@@ -410,9 +387,8 @@ gam_temp_res <- gam(
 
 summary(gam_temp_res)
 appraise(gam_temp_res)
-draw(gam_temp_res, select = c(1, 2))  # Only draw smooth terms, skip random effects
 
-
+  
 
 new_temp <- data.frame(
   temp = seq(min(df$temp, na.rm = TRUE), max(df$temp, na.rm = TRUE), length.out = 100),
@@ -423,10 +399,10 @@ new_temp <- data.frame(
   transmitter_id = "A69-1605-58"  # exclude RE for population-level effect
 )
 
-new_temp_fit <- predict(gam_mon_res, newdata = new_temp, type = "response", se.fit = TRUE)
+new_temp_fit <- predict(gam_temp_res, newdata = new_temp, type = "response", se.fit = TRUE)
 
 
-pred <- predict.gam(gam_mon_res,new_temp, type = "response", se.fit = TRUE)
+pred <- predict.gam(gam_temp_res,new_temp, type = "response", se.fit = TRUE)
 
 
 newdata_temp_res <- data.frame(pred) %>%
@@ -435,34 +411,7 @@ newdata_temp_res <- data.frame(pred) %>%
          temp = new_temp$temp)
 
 
-ggplot(newdata_temp_res, aes(x = temp, y = fit)) +
-  geom_line() +
-  labs(title = "Predicted Residency vs Temperature",
-       x = "Temperature",
-       y = "Predicted Probability of Residency")
 
 
 
 
-
-
-ggplot(newdata_monthly_res, aes(x = month, y = fit)) +
-  geom_line(color = "darkgreen", linewidth = 1.2) +
-  geom_ribbon(aes(ymin = lower, ymax = upper), fill = "green", alpha = 0.3) +
-  scale_x_continuous(breaks = seq(1,12,1)) +
-  labs(title = "Predicted Monthly Residency",
-       x = "Month", y = "Predicted Monthly Residency") +
-  theme_minimal(base_size = 14) 
-
-
-ggplot(temp_rec, aes(month, monthly_temp)) + 
-  geom_smooth(se=F) +
-  scale_y_continuous(position = "right") +
-  scale_x_continuous(breaks = seq(1,12,1)) +
-  theme(
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank(),
-    plot.background = element_rect(fill = "transparent", color = NA)
-  )
-
-ggsave("temp.png")
