@@ -7,59 +7,59 @@ library(units)
 library(grid)
 library(kableExtra)
 library(sf)
-# 
-# world <- rnaturalearth::ne_countries(returnclass = "sf", scale = 50) 
-# shape.data <- sf::st_read("SpatialData/AlWajhIslands/AlWajhIslands.shp")
-# 
-# ggplot() +
-#   geom_sf(data = world) +
-#   coord_sf(xlim = c(25, 55), ylim = c(7, 33)) +
-#   annotation_north_arrow(location = "br", which_north = "true", 
-#                          pad_x = unit(0.01, "in"), pad_y = unit(0.001, "in"),
-#                          style = north_arrow_fancy_orienteering) +
-#   annotation_scale(location = "bl", width_hint = 0.1) +
-#   theme_bw() +
-#   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-#         panel.background = element_blank())
-# 
-# ggsave("plots/region.png", dpi = 360)
-# 
-# middle_east <- rnaturalearth::ne_countries(returnclass = "sf", scale = 110) %>% 
-#   filter(name == "Saudi Arabia") %>% st_transform(crs = 32637)
-# 
-# ggplot() +
-#   geom_sf(data = middle_east) +
-#   geom_sf(data = shape.data) +
-#   geom_sf(data = shape.data %>% filter(IslandName == "Quman"), color = "#cb6527", lwd =0.8) +
-#   geom_sf(data = shape.data %>% filter(IslandName == "Al Ishsh Ash Sharqi"), color = "#489b7b", lwd =0.8) +
-#   annotation_north_arrow(location = "bl", which_north = "true", 
-#                          pad_x = unit(0.01, "in"), pad_y = unit(0.23, "in"),
-#                          style = north_arrow_fancy_orienteering) +
-#   annotation_scale(location = "bl", width_hint = 0.1) +
-#   theme_bw() +
-#   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-#         panel.background = element_blank()) +
-#   coord_sf(xlim = c(247220.3, 321072.7), ylim = c(2783820,2865031))
-# 
-# 
-# ggsave("plots/lagoon.png", dpi = 360)
-# 
-# ggplot() +
-#   geom_sf(data = shape.data) +
-#   geom_sf(data = shape.data %>% filter(IslandName == "Quman"), color = "#cb6527", lwd =0.8) +
-#   geom_sf(data = shape.data %>% filter(IslandName == "Al Ishsh Ash Sharqi"), color = "#489b7b", lwd =0.8) +
-#   geom_sf(data = receiver %>% filter(otn_array == "QUMAN" | otn_array == "Al Osh Al Sharqi" )) +
-#   annotation_north_arrow(location = "tr", which_north = "true", 
-#                          pad_x = unit(0.01, "in"), pad_y = unit(0.3, "in"),
-#                          style = north_arrow_fancy_orienteering) +
-#   annotation_scale(location = "tr", width_hint = 0.1) +
-#   theme_bw() +
-#   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-#         panel.background = element_blank()) +
-#   coord_sf(xlim = c(274747.6, 286018.9), ylim = c(2825883,2840711))
-# 
-# 
-# ggsave("plots/islands.png", dpi = 360)
+
+world <- rnaturalearth::ne_countries(returnclass = "sf", scale = 50)
+shape.data <- sf::st_read("SpatialData/AlWajhIslands/AlWajhIslands.shp")
+
+ggplot() +
+  geom_sf(data = world) +
+  coord_sf(xlim = c(25, 55), ylim = c(7, 33)) +
+  annotation_north_arrow(location = "br", which_north = "true",
+                         pad_x = unit(0.01, "in"), pad_y = unit(0.001, "in"),
+                         style = north_arrow_fancy_orienteering) +
+  annotation_scale(location = "bl", width_hint = 0.1) +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank())
+
+ggsave("plots/region.png", dpi = 360)
+
+middle_east <- rnaturalearth::ne_countries(returnclass = "sf", scale = 110) %>%
+  filter(name == "Saudi Arabia") %>% st_transform(crs = 32637)
+
+ggplot() +
+  geom_sf(data = middle_east) +
+  geom_sf(data = shape.data) +
+  geom_sf(data = shape.data %>% filter(IslandName == "Quman"), color = "#cb6527", lwd =0.8) +
+  geom_sf(data = shape.data %>% filter(IslandName == "Al Ishsh Ash Sharqi"), color = "#489b7b", lwd =0.8) +
+  annotation_north_arrow(location = "bl", which_north = "true",
+                         pad_x = unit(0.01, "in"), pad_y = unit(0.23, "in"),
+                         style = north_arrow_fancy_orienteering) +
+  annotation_scale(location = "bl", width_hint = 0.1) +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank()) +
+  coord_sf(xlim = c(247220.3, 321072.7), ylim = c(2783820,2865031))
+
+
+ggsave("plots/lagoon.png", dpi = 360)
+
+ggplot() +
+  geom_sf(data = shape.data) +
+  geom_sf(data = shape.data %>% filter(IslandName == "Quman"), color = "#cb6527", lwd =0.8) +
+  geom_sf(data = shape.data %>% filter(IslandName == "Al Ishsh Ash Sharqi"), color = "#489b7b", lwd =0.8) +
+  geom_sf(data = receiver %>% filter(otn_array == "QUMAN" | otn_array == "Al Osh Al Sharqi" )) +
+  annotation_north_arrow(location = "tr", which_north = "true",
+                         pad_x = unit(0.01, "in"), pad_y = unit(0.3, "in"),
+                         style = north_arrow_fancy_orienteering) +
+  annotation_scale(location = "tr", width_hint = 0.1) +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank()) +
+  coord_sf(xlim = c(274747.6, 286018.9), ylim = c(2825883,2840711))
+
+
+ggsave("plots/islands.png", dpi = 360)
 
 
 # Abacus ------------------------------------------------------------------
@@ -82,7 +82,7 @@ dets %>%
              shape = 4, size = 2, color = "grey41") +
   geom_vline(xintercept = date("2025-05-01 08:41:16 EDT"), color = "grey41", linetype = "longdash") +
   facet_wrap(~otn_array, scales = "free_y", nrow = 2)+
-  scale_color_manual(values = c("#489b7b", "#cb6527")) +
+  scale_color_manual(values = c("#489b7b", "#48579b")) +
   theme_minimal() +
   scale_x_date(breaks= seq(date("2022-11-15"), date("2025-05-15"), length=6),
                date_labels = "%b-%Y") +
@@ -175,10 +175,10 @@ res %>%
 # Total length model ------------------------------------------------------
 
 TL <- ggplot() +
-  geom_line(data = res_predicts, aes(x = x, y = predicted)) +
+  geom_line(data = res_predicts, aes(x = x, y = predicted), color = "#9b5a48") +
   geom_ribbon(data = res_predicts,
-              aes(x = x, ymin = conf.low, ymax = conf.high), alpha = 0.3) +
-  geom_point(data = overall_metrics, aes(x = TL, y = residency_min)) +
+              aes(x = x, ymin = conf.low, ymax = conf.high), alpha = 0.3, fill = "#9b5a48") +
+  geom_point(data = overall_metrics, aes(x = TL, y = residency_min), color = "#9b5a48", alpha = 0.75) +
   scale_y_continuous(limits = c(0, 1),
                      labels = seq(0, 1, by = 0.25)) +
   labs(x = "Total Length (cm)",
@@ -206,8 +206,8 @@ ggsave("plots/TL.png", dpi = 360, height = 4.8, width = 8.3)
 
 # this is the montly model just for plotting over temperature 
 res_gam <- ggplot(newdata_monthly_res, aes(x = month, y = fit)) +
-  geom_line(color = "black", linewidth = 1.2) +
-  geom_ribbon(aes(ymin = lower, ymax = upper), fill = "grey", alpha = 0.3) +
+  geom_line(color = "#9b5a48", linewidth = 1.2) +
+  geom_ribbon(aes(ymin = lower, ymax = upper), fill = "#9b5a48", alpha = 0.3) +
   scale_x_continuous(breaks = seq(1,12,1)) +
   scale_y_continuous(limits = c(0, 1),
                      labels = seq(0, 1, by = 0.25)) +
@@ -260,7 +260,7 @@ temp_effect
 
 
 temp_partial <-
-  draw(gam_temp_res, select = c(1)) +
+  draw(gam_temp_res, select = c(1), smooth_col ="#703534", ci_col = "#703534") +
   scale_x_continuous(limits = c(16, 32), breaks = seq(16, 32, by = 2)) +
   scale_y_continuous(position = "right") +
   labs(x = "Temperature (C)",title = "")  +
@@ -289,7 +289,7 @@ ggsave("plots/temp_partial.png", dpi = 360, height = 4.2, width = 4.55)
 
 
 temp <- ggplot(temp_rec, aes(month, monthly_temp)) + 
-  geom_smooth(se=F, color = "#420D09") +
+  geom_smooth(se=F, color = "#703534", linetype = "dashed") +
   scale_x_continuous(breaks = seq(1,12,1)) +
   scale_y_continuous(limits = c(15, 35), breaks = seq(15, 35, by = 5),
                      position = "right") +
@@ -301,8 +301,10 @@ temp <- ggplot(temp_rec, aes(month, monthly_temp)) +
     strip.text.x = element_blank(),
     panel.grid.major.y = element_blank(),
     axis.text = element_text(size = 15),
+    axis.text.y = element_text(colour = "#703534"),
     axis.title = element_text(size = 20),
-    axis.title.y = element_text(vjust=0),
+    axis.title.y = element_text(vjust=0, color = "#703534"),
+    axis.ticks.y = element_line(color = "#703534"),
     axis.title.x = element_text(vjust=0),
     text = element_text(size = 10),
     legend.position = "none",
@@ -314,6 +316,8 @@ temp <- ggplot(temp_rec, aes(month, monthly_temp)) +
 temp
 
 ggsave("plots/temp.png", dpi = 360, height = 5.3, width = 8.3, bg = "transparent")
+ggsave("plots/temp.png", dpi = 360, height = 4.8, width = 8.3, bg = "transparent")
+height = 4.8, width = 8.3
 
 # EDMC --------------------------------------------------------------------
 

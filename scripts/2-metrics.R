@@ -110,7 +110,7 @@ dets %>% distinct(transmitter_id, .keep_all = T) %>% count(sex)
 
 dets %>% distinct(transmitter_id, .keep_all = T) %>% count(new_class)
 
-dets %>% distinct(transmitter_id, .keep_all = T) %>% count(otn_array)
+dets %>% distinct(transmitter_id, .keep_all = T) %>% dplyr::count(otn_array)
 
 
 dets %>% distinct(transmitter_id, .keep_all = T) %>% 
