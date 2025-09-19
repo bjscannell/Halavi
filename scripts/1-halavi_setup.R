@@ -62,7 +62,7 @@ raw <- vroom(files, skip = 1, id = "source") %>% clean_names()
 
 dets_raw <- raw %>% filter(record_type == "DET") %>% 
   dplyr::select(field_2, field_7, field_10, source) %>% 
-  rename(detection_timestamp = field_2,
+  dplyr::rename(detection_timestamp = field_2,
          receiver = field_7,
          tag_id = field_10) %>% 
   filter(!str_detect(tag_id, "A69-1601")) %>% 
@@ -85,7 +85,7 @@ dets <- dets_raw %>% left_join(HalaviArray, by = c("id" = "names")) %>%
 dets_g <- dets %>% 
   mutate(transmitter_codespace = str_extract(tag_id, "^[^-]*-[^-]*"),
          day = date(detection_timestamp)) %>% 
-  rename(detection_timestamp_utc = detection_timestamp,
+  dplyr::rename(detection_timestamp_utc = detection_timestamp,
          transmitter_id = tag_id,
          receiver_sn = receiver)
 

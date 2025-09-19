@@ -76,8 +76,6 @@ stations$station_no[stations$station_no == "Qu3"] <- "North"
 
 rownames(stations) <- stations$station_no
 
-# Quman shapefile
-na_quman_wgs <- st_transform(shape.data %>% filter(IslandName == "Quman"), crs = 4326)
 
 # season function
 getSeason <- function(input.date){
@@ -130,6 +128,21 @@ calculate_edmc <- function(col_name, value) {
   return(list(matrix_values, eig))
 }
 
+
+# Mapping needs -----------------------------------------------------------
+
+library(ggspatial)
+library(patchwork)
+library(units)
+library(grid)
+library(kableExtra)
+library(sf)
+
+world <- rnaturalearth::ne_countries(returnclass = "sf", scale = 50)
+shape.data <- sf::st_read("SpatialData/AlWajhIslands/AlWajhIslands.shp")
+
+# Quman shapefile
+na_quman_wgs <- st_transform(shape.data %>% filter(IslandName == "Quman"), crs = 4326)
 
 # EDMC plot function ---------------------------------------------------------------
 

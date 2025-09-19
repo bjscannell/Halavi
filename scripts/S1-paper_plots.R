@@ -68,6 +68,8 @@ ggsave("plots/islands.png", dpi = 360)
   
 # Abacus plot
 
+
+
 dets %>% 
   mutate(date = date(detection_timestamp_utc)) %>% 
   add_count(transmitter_id, date) %>% distinct(transmitter_id, date, .keep_all = T) %>% 
@@ -102,9 +104,13 @@ dets %>%
         axis.title = element_text(size = 20),
         axis.title.y = element_text(vjust=-5),
         axis.title.x = element_text(vjust=0),
-        text = element_text(size = 10),
-        legend.position = "none")
-ggsave("plots/abacus.png", dpi = 360, height = 4.5, width = 9.2)
+        panel.border = element_blank(),
+        legend.position = "none",
+        text = element_text(family = "serif")) 
+  
+
+
+ggsave("plots/abacus.png", dpi = 600, height = 4.5, width = 9.2)
 
 
 
@@ -192,15 +198,15 @@ TL <- ggplot() +
         plot.background = element_rect(fill = "white"),
         panel.grid.major.y = element_blank(),
         axis.text = element_text(size = 15),
-        axis.title = element_text(size = 20),
+        axis.title = element_text(size = 25),
         axis.title.y = element_text(vjust=0),
         axis.title.x = element_text(vjust=0),
-        text = element_text(size = 10),
+        text = element_text(family = "serif", size = 10),
         legend.position = "none")
 
 TL
 
-ggsave("plots/TL.png", dpi = 360, height = 4.8, width = 8.3)
+ggsave("plots/TL.png", dpi = 600, height = 4.8, width = 8.3)
 
 # GAM monthly models ------------------------------------------------------
 
@@ -224,12 +230,12 @@ res_gam <- ggplot(newdata_monthly_res, aes(x = month, y = fit)) +
         axis.title = element_text(size = 20),
         axis.title.y = element_text(vjust=0),
         axis.title.x = element_text(vjust=0),
-        text = element_text(size = 10),
+        text = element_text(size = 10, family = "serif"),
         legend.position = "none")
 
 res_gam
 
-ggsave("plots/monthly_res.png", dpi = 360, height = 4.8, width = 8.3)
+ggsave("plots/monthly_res.png", dpi = 600, height = 4.8, width = 8.3)
 
 
 # temperature effect ------------------------------------------------------
@@ -249,11 +255,11 @@ temp_effect <- ggplot(newdata_temp_res) +
         panel.background = element_rect(fill = "white", color = "white"),
         plot.background = element_rect(fill = "white"),
         panel.grid.major.y = element_blank(),
-        axis.text = element_text(size = 15),
-        axis.title = element_text(size = 20),
+        axis.text = element_text(size = 50),
+        axis.title = element_text(size = 60),
         axis.title.y = element_text(vjust=0),
         axis.title.x = element_text(vjust=0),
-        text = element_text(size = 10),
+        text = element_text(size = 10, family = "serif"),
         legend.position = "none")
 
 temp_effect
@@ -276,7 +282,7 @@ temp_partial <-
         axis.title = element_text(size = 20),
         axis.title.y = element_text(vjust=0),
         axis.title.x = element_text(vjust=0),
-        text = element_text(size = 10),
+        text = element_text(size = 10, family = "serif"),
         legend.position = "none")
   
 
@@ -300,13 +306,13 @@ temp <- ggplot(temp_rec, aes(month, monthly_temp)) +
     plot.caption.position =  "plot",  
     strip.text.x = element_blank(),
     panel.grid.major.y = element_blank(),
-    axis.text = element_text(size = 15),
+    axis.text = element_text(size = 50),
     axis.text.y = element_text(colour = "#703534"),
-    axis.title = element_text(size = 20),
+    axis.title = element_text(size = 60),
     axis.title.y = element_text(vjust=0, color = "#703534"),
     axis.ticks.y = element_line(color = "#703534"),
     axis.title.x = element_text(vjust=0),
-    text = element_text(size = 10),
+    text = element_text(size = 10, family = "serif"),
     legend.position = "none",
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank(),
@@ -317,7 +323,6 @@ temp
 
 ggsave("plots/temp.png", dpi = 360, height = 5.3, width = 8.3, bg = "transparent")
 ggsave("plots/temp.png", dpi = 360, height = 4.8, width = 8.3, bg = "transparent")
-height = 4.8, width = 8.3
 
 # EDMC --------------------------------------------------------------------
 
@@ -330,4 +335,28 @@ summer_plot <- edmc_plot(edmc_summer)
 
 juv_plot + yoy_plot + winter_plot + summer_plot + plot_layout(guides = "collect")
 
-ggsave("plots/edmc.png", dpi = 360, height = 11, width = 8.1, bg = "transparent")
+ggsave("plots/edmc.png", dpi = 600, height = 12, width = 8, bg = "transparent")
+
+
+# Tables ------------------------------------------------------------------
+
+
+library(kableExtra)
+library(sjPlot)
+
+tab_model(gam_temp_res, title = "Linear Model Summary")
+tab_model(glmmfull_res, title = "Linear Model Summary")
+
+
+
+tibble(edmc_yoy[[2]]) %>% kable() %>% kable_classic(full_width = F, html_font = "Cambria")
+tibble(edmc_juv[[2]]) %>% kable() %>% kable_classic(full_width = F, html_font = "Cambria")
+
+tibble(edmc_winter[[2]]) %>% kable() %>% kable_classic(full_width = F, html_font = "Cambria")
+tibble(edmc_summer[[2]]) %>% kable() %>% kable_classic(full_width = F, html_font = "Cambria")
+
+
+left_join(tibble(edmc_winter[[2]]), tibble(edmc_summer[[2]]) , by = "station") %>% 
+  left_join(tibble(edmc_yoy[[2]]), by = "station") %>% 
+  left_join(tibble(edmc_juv[[2]]), by = "station") %>% View()
+
